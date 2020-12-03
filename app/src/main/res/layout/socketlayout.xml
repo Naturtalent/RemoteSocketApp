@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <data>
+        <variable
+            name="remotesocket"
+            type="it.naturtalent.databinding.RemoteData" />
+    </data>
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/icon"
+            android:layout_width="@dimen/socket_icon_size"
+            android:layout_height="@dimen/socket_icon_size"
+            android:layout_marginLeft="4px"
+            android:layout_marginTop="4px"
+            android:layout_marginRight="10px"
+            android:src="@drawable/ic_launcher">
+
+        </ImageView>
+
+        <TextView
+            android:id="@+id/label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@={remotesocket.name}"
+            android:textSize="20px"></TextView>
+
+    </LinearLayout>
+</layout>

@@ -1,0 +1,3 @@
+include ':threadposter'
+include ':app'
+rootProject.name = "RemoteSocketApp"
