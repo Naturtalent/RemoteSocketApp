@@ -20,6 +20,7 @@
     android:layout_height="72dp"
     android:layout_marginLeft="16dp"
     android:layout_marginRight="16dp"
+    android:background="@drawable/selector_row"
     android:gravity="center_vertical">
 
     <ImageView

@@ -35,21 +35,33 @@ public class FakeDataFetcher {
      */
 
     @WorkerThread
-    public List<RemoteData>  getData() throws DataFetchException {
+    public List<RemoteData> getData() throws DataFetchException
+    {
+
+        List<RemoteData>remoteData = null;
 
         // simulate 2 seconds worth of work
-        try {
-            Thread.sleep(2000);
-        } catch (InterruptedException e) {
+        try
+        {
+            Thread.sleep(6000);
+
+            // die reale Ladefunktion muss im Fehlerfall eine 'InterruptedException e' werfen
+            remoteData = loadDataList ();
+
+        } catch (InterruptedException e)
+        {
             e.printStackTrace();
         }
 
-        mIsError = !mIsError; // error response every other time
+        // Fehlerantwort fuer jedes zweite Mal (unklar)
+        mIsError = !mIsError;
 
-        if (mIsError) {
+        if (mIsError)
+        {
             throw new DataFetchException();
-        } else {
-            return loadDataList ();
+        } else
+        {
+            return remoteData;
         }
     }
 

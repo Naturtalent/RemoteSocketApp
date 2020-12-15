@@ -16,13 +16,16 @@
 
 package it.naturtalent.remotesocketapp;
 
+import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import it.naturtalent.databinding.RemoteData;
@@ -36,6 +39,9 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
     private static final String TAG = "SocketViewAdapter";
 
     private List<RemoteData> mDataSet;
+
+    // Index der moentan selektierten Zeile
+    private int selectedPos = RecyclerView.NO_POSITION;
 
     /*
         Click Listener Funktionalitaet
@@ -54,7 +60,9 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
         mClickInterface = clickInterface;
     }
 
-
+    /*
+        Listener der ersten Spalte (Icon)
+     */
     private class FirstClickListener implements View.OnClickListener
     {
         private int mPosition;
@@ -75,11 +83,18 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
         {
             if (mClickable)
             {
+                notifyItemChanged(selectedPos);
+                selectedPos = mPosition;
+                notifyItemChanged(selectedPos);
+
                 mClickInterface.clickEventOne(mDataSet.get(mPosition));
             }
         }
     }
 
+    /*
+      Listener der zweiten Spalte (SocketData)
+   */
     private class SecondClickListener implements View.OnClickListener
     {
         private int mPosition;
@@ -92,57 +107,32 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
         @Override
         public void onClick(View v)
         {
+            notifyItemChanged(selectedPos);
+            selectedPos = mPosition;
+            notifyItemChanged(selectedPos); 
+
             mClickInterface.clickEventTwo(mDataSet.get(mPosition), v);
         }
     }
 
-
-    // BEGIN_INCLUDE(recyclerViewSampleViewHolder)
     /**
-     * Provide a reference to the type of views that you are using (custom ViewHolder)
-     */
-    /*
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        private final TextView textView;
-
-        public ViewHolder(View v) {
-            super(v);
-            // Define click listener for the ViewHolder's View.
-            v.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Log.d(TAG, "Element " + getAdapterPosition() + " clicked.");
-                }
-            });
-            textView = (TextView) v.findViewById(R.id.textView);
-        }
-
-        public TextView getTextView() {
-            return textView;
-        }
-    }
-
-     */
-    // END_INCLUDE(recyclerViewSampleViewHolder)
-
-    /**
+     * Konstruktion
+     *
      * Initialize the dataset of the Adapter.
      */
     public SocketViewAdapter(List<RemoteData> remoteData)
     {
         mDataSet = remoteData;
-        /*
-        mDataSet = null;
+    }
 
-        List<String> listSocketNames = new ArrayList<>();
-        if ((remoteData != null) && (!remoteData.isEmpty()))
-        {
-            for (RemoteData remote : remoteData)
-                listSocketNames.add(remote.getName());
-        }
+    public List<RemoteData> getmDataSet()
+    {
+        return mDataSet;
+    }
 
-        mDataSet = listSocketNames.toArray(new String[listSocketNames.size()]);
-         */
+    public void setmDataSet(List<RemoteData> mDataSet)
+    {
+        this.mDataSet = mDataSet;
     }
 
     // BEGIN_INCLUDE(recyclerViewOnCreateViewHolder)
@@ -165,6 +155,8 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
     {
         android.util.Log.d(TAG, "Element " + position + " set.");
 
+        customHolder.itemView.setSelected(selectedPos == position);
+
         // Get element from your dataset at this position and replace the contents of the view
         // with that element
         customHolder.getTextView().setText(((RemoteData)mDataSet.get(position)).getName());
@@ -173,7 +165,6 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
         customHolder.firstClickListener.setClickable(position % 2 == 0);
         customHolder.firstClickListener.setPosition(position);
         customHolder.secondClickListener.setPosition(position);
-
     }
     // END_INCLUDE(recyclerViewOnBindViewHolder)
 
@@ -181,11 +172,11 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
     @Override
     public int getItemCount()
     {
-        return mDataSet.size();
+        return (mDataSet != null) ? mDataSet.size() : 0;
     }
 
     /*
-         provatge ViewHolder - Klasse
+         private ViewHolder - Klasse
      */
     protected class CustomHolder extends RecyclerView.ViewHolder
     {
@@ -196,12 +187,23 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
         public CustomHolder(View itemView)
         {
             super(itemView);
-            v1 = itemView.findViewById(R.id.icon);
-            v2 = itemView.findViewById(R.id.textView);
+
+            //
+            //  Listener der ersten Spalte (Icon)
+            //
             firstClickListener = new FirstClickListener();
+
+            // der Listener der ersten Spalte (Icon) zuordnen
+            v1 = itemView.findViewById(R.id.icon);
+            v1.setOnClickListener(firstClickListener);
+
+            //
+            //  Listener der zweiten Spalte (Text)
+            //
             secondClickListener = new SecondClickListener();
 
-            v1.setOnClickListener(firstClickListener);
+            // den Listener der zweiten Spalte (Text) zuordnen
+            v2 = itemView.findViewById(R.id.textView);
             v2.setOnClickListener(secondClickListener);
         }
 

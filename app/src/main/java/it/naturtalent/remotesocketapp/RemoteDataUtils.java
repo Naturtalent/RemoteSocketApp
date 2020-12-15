@@ -11,7 +11,6 @@ import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.ListFragment;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import it.naturtalent.databinding.RemoteData;
@@ -32,14 +31,17 @@ public class RemoteDataUtils
     // ThreadPool Parameter
     private static FetchDataUseCase mFetchDataUseCase;
     private InitializeDialogFragment dialogFragment;
-    private FetchDataUseCase.Listener threadPoolListerner;
+    protected static FetchDataUseCase.Listener threadPoolListener;
 
     // die gespeicherten Daten
-    private static List<RemoteData> socketData;
+    //private static List<RemoteData> socketData;
 
 
 
-    // Listener dient dazau den LoadData-Dialog wieder zu beenden
+    /*
+        Listener dient nur dazau den LoadData-Dialog wieder zu beenden sowohl
+        bei erfolgreichem Ladevorgang als auch im Abbruchsfall.
+     */
     private FetchDataUseCase.Listener ctrlDialogListener = new FetchDataUseCase.Listener()
     {
         @Override
@@ -58,15 +60,18 @@ public class RemoteDataUtils
 
     /*
         Konstruktion
+
+        Der uebergebene Listener 'threadPoolListerner' liefert die Daten mit seiner
+        onDataFetched(List<RemoteData> data) - Funktion
      */
-    public RemoteDataUtils(Fragment fragment, FetchDataUseCase.Listener threadPoolListerner)
+    public RemoteDataUtils(Fragment fragment, FetchDataUseCase.Listener threadPoolListener)
     {
         this.fragment = fragment;
-        this.threadPoolListerner = threadPoolListerner;
+        this.threadPoolListener = threadPoolListener;
     }
 
     /*
-        interne Klasse Lade-Dialog (Anzeige waehrend des Ladevorgangs)
+        interne Klasse realisiert den AlertDialog (Anzeige waehrend des Ladevorgangs)
      */
     public static class InitializeDialogFragment extends DialogFragment
     {
@@ -80,24 +85,33 @@ public class RemoteDataUtils
             return frag;
         }
 
+        /*
+            Ein Alert-Dialog erzeugen und waehrend des Datenladevorgangs angezeigen.
+         */
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState)
         {
             int title = getArguments().getInt("title");
-
             return new AlertDialog.Builder(getActivity())
                     .setIcon(R.drawable.alert_dialog_dart_icon)
                     .setTitle(title)
+                    .setView(R.layout.custom_alert)
                     .setCancelable(true)
                     .setNegativeButton(R.string.load_dialog_cancel,
                             new DialogInterface.OnClickListener()
                             {
-                                public void onClick(DialogInterface dialog,
-                                                    int whichButton)
+                                // Listener meldet den Abbruch des Ladevorgangs
+                                public void onClick(DialogInterface dialog, int whichButton)
                                 {
+
                                     //it.naturtalent.common.logger.Log.i("FragmentAlertDialog", "Negative click!");
-                                    android.util.Log.i("FragmentAlertDialog", "Negative click!");
-                                    //dialog.dismiss();
+                                    android.util.Log.i("FragmentAlertDialog", "Abbruch!");
+
+                                    // verhindert, dass der Ladethread Daten liefert
+                                    mFetchDataUseCase.unregisterListener(threadPoolListener);
+
+                                    // dieses DialogFragment wird geschlossen
+                                    mFetchDataUseCase.notifyFailure();
                                 }
                             })
                     .create();
@@ -107,29 +121,27 @@ public class RemoteDataUtils
 
 
     /*
-        Laden der gespeicherten Daten mit dem ThradPool Tool
-
+        Laden der gespeicherten Daten mit dem ThradPool Tool. Der Ladevorgang wird einem
+        separaten Thread ausgefuehrt, deshalb gibt diese Funktion auch keine Daten zurueck sondern
+        ein Listerner informiert ueber den abgeschlossenen Ladevorgang und liefert die Daten.
+        Fuer die Dauer des Ladevorgangs wird ein Alert-Dialog eingeblendet mit die Aktion auch
+        gecancelt werden kann.
      */
-    public List<RemoteData> getSocketData()
+    public void loadSocketData()
     {
-        if(socketData == null)
-        {
-            mFetchDataUseCase = new ThreadPool().getFetchDataUseCase();
+        mFetchDataUseCase = new ThreadPool().getFetchDataUseCase();
 
-            // den dialogabschalte Listener (s.o.) registrieren
-            mFetchDataUseCase.registerListener(ctrlDialogListener);
+        // den dialogabschalte Listener (s.o.) registrieren
+        mFetchDataUseCase.registerListener(ctrlDialogListener);
 
-            // Listener mit dem das ThredPool das Ende des Ladevorgangs meldet registrieren
-            mFetchDataUseCase.registerListener(threadPoolListerner);
+        // Listener mit dem das ThredPool das Ende des Ladevorgangs meldet registrieren
+        mFetchDataUseCase.registerListener(threadPoolListener);
 
-            // die eigentliche Ladefunktion starten
-            mFetchDataUseCase.fetchData();
+        // die eigentliche Ladefunktion in einem eigenen Thread starten starten
+        mFetchDataUseCase.fetchData();
 
-            // Dialog fuer die Dauer des Ladevorgangs
-            showDialog();
-        }
-
-        return socketData;
+        // Dialog fuer die Dauer des Lade-Threads zeigen
+        showDialog();
     }
 
     private void showDialog()
@@ -137,41 +149,6 @@ public class RemoteDataUtils
         dialogFragment = InitializeDialogFragment.newInstance(R.string.alert_dialog_loaddata_title);
         dialogFragment.show(fragment.getActivity().getSupportFragmentManager(), "dialog");
     }
-
-
-
-
-    // RemmoteSeocketDaten generieren
-    public List<RemoteData> loadDataList ()
-    {
-        List<RemoteData>remoteDateList = new ArrayList<>();
-
-        /*
-        RemoteData socket = new RemoteData("Schalter1", "type", "Code", "RemoteCode");
-        remoteDateList.add(socket);
-
-        socket = new RemoteData("Schalter2", "type", "Code", "RemoteCode");
-        remoteDateList.add(socket);
-        */
-
-
-        int n = 20;
-        for(int i = 1; i < n;i++)
-        {
-            RemoteData socket = new RemoteData("Schalter"+i, "type", "Code", "RemoteCode");
-            remoteDateList.add(socket);
-        }
-
-        return remoteDateList;
-    }
-
-    /*
-    public List<RemoteData> getRemoteDateList()
-    {
-        return remoteDateList;
-    }
-
-     */
 
 
 }
