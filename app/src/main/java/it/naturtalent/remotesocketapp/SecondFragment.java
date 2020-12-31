@@ -1,6 +1,10 @@
 package it.naturtalent.remotesocketapp;
 
+
+
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -8,7 +12,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentResultListener;
+import androidx.fragment.app.FragmentResultOwner;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -30,8 +40,63 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
 
     private List<RemoteData> mDataSet;
 
+    //private RemoteData selectedRemoteData;
+    private int selectedIDX = 0;
+
     //private LinearLayout linearLayout;
     //private ViewGroup container;
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState)
+    {
+        super.onCreate(savedInstanceState);
+
+        Fragment parent = getParentFragment();
+        FragmentManager fragmentManager = getParentFragmentManager();
+        List<Fragment> fragmentList = fragmentManager.getFragments();
+
+        // Listener meldet  FloatingActionButton 'DELETE'
+        getParentFragmentManager().setFragmentResultListener("requestKey", this, new FragmentResultListener() {
+            @Override
+            public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle bundle) {
+
+                selectedIDX = mAdapter.getSelectedPos();
+                if(selectedIDX > 0)
+                {
+                    // Bestaedigungsdialog 'Loeschen'
+                    new AlertDialog.Builder(getActivity())
+                            .setIcon(R.drawable.delete_icon_gray)
+                            .setTitle(R.string.title_dialog_delete)
+                            .setCancelable(true)
+                            .setPositiveButton(R.string.alert_dialog_ok,
+                                    new DialogInterface.OnClickListener()
+                                    {
+                                        public void onClick(DialogInterface dialog,
+                                                            int whichButton)
+                                        {
+                                            // den selektierten Eintrag loeschen
+                                            mAdapter.notifyItemRemoved(selectedIDX);
+                                            mAdapter.notifyItemChanged(selectedIDX-1);
+                                            //mAdapter.setSelectedPos(0);
+                                        }
+                                    })
+                            .setNegativeButton(R.string.alert_dialog_cancel,
+                                    new DialogInterface.OnClickListener()
+                                    {
+                                        public void onClick(DialogInterface dialog,
+                                                            int whichButton)
+                                        {
+                                            // do nothing
+
+                                        }
+                                    })
+                            .create().show();
+                }
+            }
+        });
+
+    }
+
 
     @Override
     public View onCreateView(
@@ -61,8 +126,12 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
             public void clickEventTwo(Object obj1, Object obj2)
             {
                 //android.util.Log.d("SecondFragment", "Click Socket: "+((RemoteData)obj2).getName());
-                RemoteData socket = (RemoteData) obj1;
-                android.util.Log.d("SecondFragment", "Socket: "+socket.getName());
+                /*
+                int selectedIDX = mAdapter.getSelectedPos();
+                selectedRemoteData = (RemoteData) obj1;
+                android.util.Log.d("SecondFragment", "Socket: "+selectedRemoteData.getName()+" Index: "+selectedIDX);
+
+                 */
             }
 
 
@@ -80,8 +149,9 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
         mAdapter.setmDataSet(mDataSet);
 
         // die Daten abfragen (ggf. den Datenladevorgang starten)
-        RemoteDataUtils remoteDataUtils = new RemoteDataUtils(this, this );
+        RemoteDataUtils remoteDataUtils = new RemoteDataUtils(this, this);
         remoteDataUtils.loadSocketData();
+
 
         android.util.Log.d("SecondFragment", "start loading");
 
@@ -111,4 +181,6 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
     {
         android.util.Log.i("Datenladevorgang", "Datenladevorgang erfolglos");
     }
+
+
 }

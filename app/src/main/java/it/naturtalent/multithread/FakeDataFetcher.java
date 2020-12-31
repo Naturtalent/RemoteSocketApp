@@ -43,7 +43,7 @@ public class FakeDataFetcher {
         // simulate 2 seconds worth of work
         try
         {
-            Thread.sleep(6000);
+            Thread.sleep(2000);
 
             // die reale Ladefunktion muss im Fehlerfall eine 'InterruptedException e' werfen
             remoteData = loadDataList ();

@@ -213,4 +213,18 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
         }
     }
 
+    public int getSelectedPos()
+    {
+        return selectedPos;
+    }
+
+    /*
+    @toDo
+        Selektiert nicht wirklich, sondern dient momentan nur zum Zurueksetzen der 'selectedPos'
+        nach erfolgter Loeschung des selektierten Eintrags @see SecondFragment (loeschen)
+     */
+    public void setSelectedPos(int selectedPos)
+    {
+        this.selectedPos = 0;
+    }
 }
