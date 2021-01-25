@@ -5,9 +5,6 @@ import android.app.Application;
 import com.techyourchance.threadposter.BackgroundThreadPoster;
 import com.techyourchance.threadposter.UiThreadPoster;
 
-import it.naturtalent.multithread.FakeDataFetcher;
-import it.naturtalent.multithread.FetchDataUseCase;
-
 public class ThreadPool extends Application {
 
     /*
@@ -20,8 +17,13 @@ public class ThreadPool extends Application {
     private final FakeDataFetcher mFakeDataFetcher = new FakeDataFetcher();
     private final FetchDataUseCase mFetchDataUseCase =
             new FetchDataUseCase(mFakeDataFetcher, mBackgroundThreadPoster, mUiThreadPoster);
-
     public FetchDataUseCase getFetchDataUseCase() {
         return mFetchDataUseCase;
+    }
+
+    private final PushDataUseCase mPushDataUseCase =
+            new PushDataUseCase(mFakeDataFetcher, mBackgroundThreadPoster, mUiThreadPoster);
+    public PushDataUseCase getPushDataUseCase() {
+        return mPushDataUseCase;
     }
 }

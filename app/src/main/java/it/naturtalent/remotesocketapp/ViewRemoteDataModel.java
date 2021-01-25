@@ -1,19 +1,21 @@
 package it.naturtalent.remotesocketapp;
 
+import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
-import it.naturtalent.databinding.RemoteData;
-
 public class ViewRemoteDataModel  extends ViewModel
 {
-    private MutableLiveData<String> currentName;
+    private MutableLiveData<SocketViewAdapter> dataModel = new MutableLiveData<SocketViewAdapter>();
 
-    public MutableLiveData<String> getCurrentName() {
-        if (currentName == null) {
-            currentName = new MutableLiveData<String>();
-        }
-        return currentName;
+    public void setDataModel(SocketViewAdapter adapter)
+    {
+        dataModel.setValue(adapter);
+    }
+
+    public LiveData<SocketViewAdapter> getDataModel()
+    {
+        return dataModel;
     }
 
 

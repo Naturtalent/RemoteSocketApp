@@ -20,9 +20,13 @@
         android:name="it.naturtalent.remotesocketapp.SecondFragment"
         android:label="@string/second_fragment_label"
         tools:layout="@layout/fragment_second">
-
         <action
-            android:id="@+id/action_SecondFragment_to_FirstFragment"
-            app:destination="@id/FirstFragment" />
+            android:id="@+id/action_SecondFragment_to_socketFragment"
+            app:destination="@id/socketFragment" />
     </fragment>
+    <fragment
+        android:id="@+id/socketFragment"
+        android:name="it.naturtalent.remotesocketapp.SocketFragment"
+        android:label="fragment_socket"
+        tools:layout="@layout/fragment_socket" />
 </navigation>

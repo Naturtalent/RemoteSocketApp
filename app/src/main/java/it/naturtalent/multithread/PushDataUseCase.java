@@ -1,8 +1,6 @@
 package it.naturtalent.multithread;
 
 
-import android.content.Context;
-
 import androidx.annotation.UiThread;
 import androidx.annotation.WorkerThread;
 
@@ -16,22 +14,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import it.naturtalent.databinding.RemoteData;
 
-public class FetchDataUseCase
+public class PushDataUseCase
 {
 
-    /*
-    public interface Listener {
-        void onDataFetched(String data);
-        void onDataFetchFailed();
-    }
-
-     */
 
     public interface Listener
     {
-        void onDataFetched(List<RemoteData> data);
+        void onDataPushed(List<RemoteData> data);
 
-        void onDataFetchFailed();
+        void onDataPushFailed();
     }
 
     private final FakeDataFetcher mFakeDataFetcher;
@@ -41,9 +32,9 @@ public class FetchDataUseCase
     private final Set<Listener> mListeners = Collections.newSetFromMap(
             new ConcurrentHashMap<Listener, Boolean>());
 
-    public FetchDataUseCase(FakeDataFetcher fakeDataFetcher,
-                            BackgroundThreadPoster backgroundThreadPoster,
-                            UiThreadPoster uiThreadPoster)
+    public PushDataUseCase(FakeDataFetcher fakeDataFetcher,
+                           BackgroundThreadPoster backgroundThreadPoster,
+                           UiThreadPoster uiThreadPoster)
     {
         mFakeDataFetcher = fakeDataFetcher;
         mBackgroundThreadPoster = backgroundThreadPoster;
@@ -60,7 +51,7 @@ public class FetchDataUseCase
         mListeners.remove(listener);
     }
 
-    public void fetchData()
+    public void pushData()
     {
         // offload work to background thread
         mBackgroundThreadPoster.post(new Runnable()
@@ -68,14 +59,25 @@ public class FetchDataUseCase
             @Override
             public void run()
             {
-                fetchDataSync();
+                pushDataSync();
             }
         });
     }
 
     @WorkerThread
-    private void fetchDataSync()
+    private void pushDataSync()
     {
+
+        mUiThreadPoster.post(new Runnable()
+        { // notify listeners on UI thread
+            @Override
+            public void run()
+            {
+                notifySuccess(null);
+            }
+        });
+
+        /*
         try
         {
             final List<RemoteData> data = mFakeDataFetcher.getData();
@@ -98,6 +100,8 @@ public class FetchDataUseCase
                 }
             });
         }
+
+         */
     }
 
     @UiThread
@@ -105,7 +109,7 @@ public class FetchDataUseCase
     {
         for (Listener listener : mListeners)
         {
-            listener.onDataFetchFailed();
+            listener.onDataPushFailed();
         }
     }
 
@@ -114,7 +118,7 @@ public class FetchDataUseCase
     {
         for (Listener listener : mListeners)
         {
-            listener.onDataFetched(data);
+            listener.onDataPushed(data);
         }
     }
 

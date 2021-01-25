@@ -5,23 +5,34 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.util.Xml;
+import android.view.View;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.ListFragment;
 
+import org.xmlpull.v1.XmlSerializer;
+
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.List;
 
 import it.naturtalent.databinding.RemoteData;
 import it.naturtalent.multithread.FetchDataUseCase;
+import it.naturtalent.multithread.PushDataUseCase;
 import it.naturtalent.multithread.ThreadPool;
 
 public class RemoteDataUtils
 {
 
+
+
     private Context context;
-   // private SocketAdapter socketAdapter;
+    // private SocketAdapter socketAdapter;
     private ListFragment listFragment;
 
     private ProgressDialog mProgressBar;
@@ -33,9 +44,12 @@ public class RemoteDataUtils
     private InitializeDialogFragment dialogFragment;
     protected static FetchDataUseCase.Listener threadPoolListener;
 
+    private static PushDataUseCase mPushDataUseCase;
+    protected static PushDataUseCase.Listener threadPushPoolListener;
+
+
     // die gespeicherten Daten
     //private static List<RemoteData> socketData;
-
 
 
     /*
@@ -57,6 +71,21 @@ public class RemoteDataUtils
         }
     };
 
+    private PushDataUseCase.Listener ctrlPushDialogListener = new PushDataUseCase.Listener()
+    {
+        @Override
+        public void onDataPushed(List<RemoteData> data)
+        {
+            dialogFragment.dismiss();
+        }
+
+        @Override
+        public void onDataPushFailed()
+        {
+            dialogFragment.dismiss();
+        }
+   };
+
 
     /*
         Konstruktion
@@ -69,6 +98,13 @@ public class RemoteDataUtils
         this.fragment = fragment;
         this.threadPoolListener = threadPoolListener;
     }
+
+    public RemoteDataUtils(Fragment fragment, PushDataUseCase.Listener threadPushPoolListener)
+    {
+        this.fragment = fragment;
+        this.threadPushPoolListener = threadPushPoolListener;
+    }
+
 
     /*
         interne Klasse realisiert den AlertDialog (Anzeige waehrend des Ladevorgangs)
@@ -85,8 +121,11 @@ public class RemoteDataUtils
             return frag;
         }
 
-        /*
-            Ein Alert-Dialog erzeugen und waehrend des Datenladevorgangs angezeigen.
+        /**
+         * Ein Alert-Dialog erzeugen und waehrend des Datenladevorgangs angezeigen.
+         *
+         * @param savedInstanceState
+         * @return
          */
         @Override
         public Dialog onCreateDialog(Bundle savedInstanceState)
@@ -119,13 +158,12 @@ public class RemoteDataUtils
     }
 
 
-
-    /*
-        Laden der gespeicherten Daten mit dem ThradPool Tool. Der Ladevorgang wird einem
-        separaten Thread ausgefuehrt, deshalb gibt diese Funktion auch keine Daten zurueck sondern
-        ein Listerner informiert ueber den abgeschlossenen Ladevorgang und liefert die Daten.
-        Fuer die Dauer des Ladevorgangs wird ein Alert-Dialog eingeblendet mit die Aktion auch
-        gecancelt werden kann.
+    /**
+     * Laden der gespeicherten Daten mit dem ThradPool Tool. Der Ladevorgang wird einem
+     * separaten Thread ausgefuehrt, deshalb gibt diese Funktion auch keine Daten zurueck sondern
+     * ein Listerner informiert ueber den abgeschlossenen Ladevorgang und liefert die Daten.
+     * Fuer die Dauer des Ladevorgangs wird ein Alert-Dialog eingeblendet mit die Aktion auch
+     * gecancelt werden kann.
      */
     public void loadSocketData()
     {
@@ -144,11 +182,43 @@ public class RemoteDataUtils
         showDialog();
     }
 
+    public void saveSocketData()
+    {
+        PushDataUseCase mPushDataUseCase =  new ThreadPool().getPushDataUseCase();
+
+
+        //den dialogabschalte Listener (s.o.) registrieren
+        mPushDataUseCase.registerListener(ctrlPushDialogListener);
+
+        /*
+
+        // Listener mit dem das ThredPool das Ende des Ladevorgangs meldet registrieren
+        mFetchDataUseCase.registerListener(threadPoolListener);
+
+         */
+
+        // die eigentliche Ladefunktion in einem eigenen Thread starten starten
+        mPushDataUseCase.pushData();
+
+
+        // Dialog fuer die Dauer des Lade-Threads zeigen
+        showSaveDialog();
+    }
+
+
     private void showDialog()
     {
         dialogFragment = InitializeDialogFragment.newInstance(R.string.alert_dialog_loaddata_title);
         dialogFragment.show(fragment.getActivity().getSupportFragmentManager(), "dialog");
     }
+
+    private void showSaveDialog()
+    {
+        android.util.Log.i("FragmentAlertDialog", "Dialog Speichern zeigen");
+        dialogFragment = InitializeDialogFragment.newInstance(R.string.alert_dialog_savedata_title);
+        dialogFragment.show(fragment.getActivity().getSupportFragmentManager(), "dialog");
+    }
+
 
 
 }

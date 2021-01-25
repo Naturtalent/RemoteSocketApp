@@ -6,14 +6,25 @@
     <string name="first_fragment_label">First Fragment</string>
     <string name="second_fragment_label">Second Fragment</string>
     <string name="next">Next</string>
+    <string name="save">speichern</string>
+    <string name="cancel">abbruch</string>
     <string name="previous">Previous</string>
 
     <string name="hello_first_fragment">Hello first fragment</string>
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
     <string name="alert_dialog_loaddata_title">Daten werden geladen</string>
+    <string name="alert_dialog_savedata_title">Daten werden gespeichert</string>
     <string name="load_dialog_ok">OK</string>
     <string name="load_dialog_cancel">Cancel</string>
     <string name="alert_dialog_ok">OK</string>
     <string name="alert_dialog_cancel">Cancel</string>
+    <string name="title_dialog_add">neuer Eintrag</string>
+    <string name="title_dialog_edit">Eintrag bearbeiten</string>
     <string name="title_dialog_delete">Eintrag löschen</string>
+    <string name="title_toolbar">Funksteckdosen</string>
+    <string name="input_label_name">Bezeichnung</string>
+    <string name="input_label_remotecode">Remote Code</string>
+    <string name="input_label_housecode">House Code</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

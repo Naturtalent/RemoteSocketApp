@@ -16,11 +16,9 @@
 
 package it.naturtalent.remotesocketapp;
 
-import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
@@ -38,7 +36,7 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
 
     private static final String TAG = "SocketViewAdapter";
 
-    private List<RemoteData> mDataSet;
+    private List<RemoteData> mDataSet = new ArrayList<>();
 
     // Index der moentan selektierten Zeile
     private int selectedPos = RecyclerView.NO_POSITION;
@@ -134,6 +132,8 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
     {
         this.mDataSet = mDataSet;
     }
+
+
 
     // BEGIN_INCLUDE(recyclerViewOnCreateViewHolder)
     // Create new views (invoked by the layout manager)

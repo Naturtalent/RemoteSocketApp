@@ -1,28 +1,24 @@
 package it.naturtalent.remotesocketapp;
 
 
-
-import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentResultListener;
-import androidx.fragment.app.FragmentResultOwner;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import it.naturtalent.databinding.RemoteData;
@@ -38,25 +34,58 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
     private SocketViewAdapter mAdapter;
     private RecyclerView  recyclerView;
 
-    private List<RemoteData> mDataSet;
+    // Modell fuer den Datenaustausch zwischen Fragmenten
+    private ViewRemoteDataModel remoteDataModel;
 
     //private RemoteData selectedRemoteData;
     private int selectedIDX = 0;
 
-    //private LinearLayout linearLayout;
-    //private ViewGroup container;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
 
-        Fragment parent = getParentFragment();
-        FragmentManager fragmentManager = getParentFragmentManager();
-        List<Fragment> fragmentList = fragmentManager.getFragments();
+        // FFagmentResultListener meldet 'ADD'
+        getParentFragmentManager().setFragmentResultListener("addSocketKey", this, new FragmentResultListener() {
+            @Override
+            public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle bundle)
+            {
+                if((mAdapter.getmDataSet() != null) && (mAdapter.getmDataSet().size() > 1))
+                {
+                    //android.util.Log.d("SecondFragment", "recieve addRequestKey");
 
-        // Listener meldet  FloatingActionButton 'DELETE'
-        getParentFragmentManager().setFragmentResultListener("requestKey", this, new FragmentResultListener() {
+                    // Editfragment oeffnen
+                    NavHostFragment.findNavController(SecondFragment.this)
+                            .navigate(R.id.action_SecondFragment_to_socketFragment);
+                }
+            }
+        });
+
+        // FragmentResultListener meldet 'EDIT' Aktion
+        getParentFragmentManager().setFragmentResultListener("editSocketKey", this, new FragmentResultListener() {
+            @Override
+            public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle bundle)
+            {
+                if((mAdapter.getmDataSet() != null) && (mAdapter.getmDataSet().size() > 1))
+                {
+                    android.util.Log.d("SecondFragment", "Edit Aktion  'editSocketKey'");
+
+                    DialogFragment dialogFragment = EditSocketDialog.newInstance(R.string.title_dialog_edit);
+                    dialogFragment.show(getActivity().getSupportFragmentManager(),"dialog");
+
+
+                    /*
+                    // Editfragment oeffnen
+                    NavHostFragment.findNavController(SecondFragment.this)
+                            .navigate(R.id.action_SecondFragment_to_socketFragment);
+                     */
+                }
+            }
+        });
+
+        // FragmentResultListener meldet 'DELETE' Aktion
+        getParentFragmentManager().setFragmentResultListener("deleteSocketKey", this, new FragmentResultListener() {
             @Override
             public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle bundle) {
 
@@ -87,7 +116,6 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
                                                             int whichButton)
                                         {
                                             // do nothing
-
                                         }
                                     })
                             .create().show();
@@ -98,15 +126,15 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
     }
 
 
+
     @Override
     public View onCreateView(
             LayoutInflater inflater, final ViewGroup container, Bundle savedInstanceState)
     {
         // Wurzelview mit dem Layout dieses Fragments
-        rootView = inflater.inflate(R.layout.recycler_view_frag, container, false);
+        rootView = inflater.inflate(R.layout.fragment_second, container, false);
 
-        //mAdapter = createAdapter();
-
+        // RecycleView-Adapter erzeugen
         mAdapter = new SocketViewAdapter(null);
         mAdapter.setClickInterface(new SocketViewAdapter.ClickInterface()
         {
@@ -115,43 +143,36 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
             @Override
             public void clickEventOne(Object obj)
             {
-                RemoteData socket = (RemoteData) obj;
-                android.util.Log.d("SecondFragment", "Click Icon  "+socket.getName());
+                //android.util.Log.d("SecondFragment", "Click Icon  "+ ((RemoteData)obj).getName());
             }
 
-            // Klick erfolgte auf die zweite Spalte (Icon)
+            // Klick erfolgte auf die zweite Spalte (Namen)
             // obj1' ist das selektierte Element in der Liste
             // 'obj2' View ('TextView') der selektierten Spalte
             @Override
             public void clickEventTwo(Object obj1, Object obj2)
             {
-                //android.util.Log.d("SecondFragment", "Click Socket: "+((RemoteData)obj2).getName());
-                /*
-                int selectedIDX = mAdapter.getSelectedPos();
-                selectedRemoteData = (RemoteData) obj1;
-                android.util.Log.d("SecondFragment", "Socket: "+selectedRemoteData.getName()+" Index: "+selectedIDX);
-
-                 */
+                //android.util.Log.d("SecondFragment", "Click Socket: "+((RemoteData)obj1).getName());
             }
 
 
         });
 
+        // RecycleView-Adapter in das AdapterRemoteDataModel eintragen
+        remoteDataModel = new ViewModelProvider(requireActivity()).get(ViewRemoteDataModel.class);
+        remoteDataModel.setDataModel(mAdapter);
+
+        // RecyclerView-Adapter in RecyclerView-Fragment einbinden
         recyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerView);
         recyclerView.setAdapter(mAdapter);
 
         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(mLayoutManager);
 
-        mDataSet = new ArrayList<>();
-        RemoteData socket = new RemoteData("New Schalter", "type", "Code", "RemoteCode");
-        mDataSet.add(socket);
-        mAdapter.setmDataSet(mDataSet);
-
-        // die Daten abfragen (ggf. den Datenladevorgang starten)
+        // die Daten abfragen (ggf. den Datenladevorgang starten) - Ergebnis @see onDataFetched(()
+        //android.util.Log.d("SecondFragment", "Check Data: "+ mAdapter.getmDataSet());
         RemoteDataUtils remoteDataUtils = new RemoteDataUtils(this, this);
         remoteDataUtils.loadSocketData();
-
 
         android.util.Log.d("SecondFragment", "start loading");
 
@@ -179,7 +200,10 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
     @Override
     public void onDataFetchFailed()
     {
-        android.util.Log.i("Datenladevorgang", "Datenladevorgang erfolglos");
+        // ToDo evtl. Error-Dialog
+        Toast.makeText(getContext(), "Fehler beim Lesen der Daten", Toast.LENGTH_SHORT).show();
+        NavHostFragment.findNavController(SecondFragment.this).popBackStack();
+        //android.util.Log.i("Datenladevorgang", "Datenladevorgang erfolglos");
     }
 
 

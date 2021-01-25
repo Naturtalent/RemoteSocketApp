@@ -7,10 +7,10 @@ import androidx.databinding.BaseObservable;
 import androidx.databinding.Bindable;
 import androidx.databinding.BindingAdapter;
 import androidx.databinding.InverseBindingAdapter;
-import androidx.lifecycle.ViewModel;
+
+import it.naturtalent.remotesocketapp.BR;
 
 // durch gradle tool erzeugete Classe BR
-import it.naturtalent.remotesocketapp.BR;
 
 public class RemoteData extends BaseObservable
 {
