@@ -3,34 +3,58 @@ package it.naturtalent.remotesocketapp;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Spinner;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.databinding.DataBindingUtil;
+import androidx.databinding.InverseBindingListener;
 import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.textfield.TextInputEditText;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import it.naturtalent.databinding.RemoteData;
+import it.naturtalent.remotesocketapp.databinding.FragmentSocketBinding;
 
-public class EditSocketDialog  extends DialogFragment implements AdapterView.OnItemSelectedListener
+/**
+ *  Konstruktion
+ *  implementiert Listener fuer Socket-Type Spinner
+ */
+public class EditSocketDialog  extends DialogFragment implements AdapterView.OnItemSelectedListener, TextInputEditText.OnEditorActionListener
 {
     public static String TAG = "EditSocketDialog";
 
-    private String[] users = { "A", "B", "C"};
+    private SocketViewAdapter mAdapter;
 
-    private Object alertDialog;
+    // Klasse entsteht durch '<data>' - Definition in 'fragment_socket.xml'
+    private FragmentSocketBinding binding;
+
+    // Datensatz in Bearbeitung
+    private RemoteData remoteData;
+
+    // eine Kopie zur Wiederherstellung des Orginals
+    private RemoteData remoteDataClone;
+
+    private InverseBindingListener inverseBindingListener;
+
+    /**
+     * Konstruktion
+     * @param
+     */
+    /*
+    public EditSocketDialog(SocketViewAdapter mAdapter)
+    {
+        this.mAdapter = mAdapter;
+    }
+     */
 
     // Dialog instanziieren (s. showDialog())
     public static EditSocketDialog newInstance(int title)
@@ -49,7 +73,10 @@ public class EditSocketDialog  extends DialogFragment implements AdapterView.OnI
         Dialog dialog;
 
         LayoutInflater layoutInflater = onGetLayoutInflater(savedInstanceState);
-        View view = layoutInflater.inflate(R.layout.fragment_socket, null);
+        //View view = layoutInflater.inflate(R.layout.fragment_socket, null);
+
+        binding = DataBindingUtil.inflate(layoutInflater, R.layout.fragment_socket, null, false);
+        View view = binding.getRoot();
 
         int title = getArguments().getInt("title");
         dialog = new AlertDialog.Builder(getActivity())
@@ -61,35 +88,29 @@ public class EditSocketDialog  extends DialogFragment implements AdapterView.OnI
                 .setPositiveButton(R.string.load_dialog_ok,
                         new DialogInterface.OnClickListener()
                         {
-                            // Listener meldet den Abbruch des Ladevorgangs
+                            // Listener meldet OK Ende des Dialogs
                             public void onClick(DialogInterface dialog, int whichButton)
                             {
 
-                                //it.naturtalent.common.logger.Log.i("FragmentAlertDialog", "Negative click!");
-                                android.util.Log.i("FragmentAlertDialog", "Abbruch!");
+                                android.util.Log.i("FragmentAlertDialog", "Ok!  ");
 
-                                // verhindert, dass der Ladethread Daten liefert
-                                //mFetchDataUseCase.unregisterListener(threadPoolListener);
-
-                                // dieses DialogFragment wird geschlossen
-                                //mFetchDataUseCase.notifyFailure();
+                                // den editierten Eintrag in der Liste anzeigen
+                                mAdapter.notifyItemChanged(mAdapter.getSelectedPos());
                             }
                         })
                 .setNegativeButton(R.string.load_dialog_cancel,
                         new DialogInterface.OnClickListener()
                         {
-                            // Listener meldet den Abbruch des Ladevorgangs
+                            // Listener meldet ABBRUCH Ende des Dialogs
                             public void onClick(DialogInterface dialog, int whichButton)
                             {
 
                                 //it.naturtalent.common.logger.Log.i("FragmentAlertDialog", "Negative click!");
                                 android.util.Log.i("FragmentAlertDialog", "Abbruch!");
 
-                                // verhindert, dass der Ladethread Daten liefert
-                                //mFetchDataUseCase.unregisterListener(threadPoolListener);
-
-                                // dieses DialogFragment wird geschlossen
-                                //mFetchDataUseCase.notifyFailure();
+                                // bei Abbruch den urspruenglichen Datensatz zurueckspeichern
+                                mAdapter.getmDataSet().set(mAdapter.getSelectedPos(), remoteDataClone);
+                                mAdapter.notifyItemChanged(mAdapter.getSelectedPos());
                             }
                         })
 
@@ -101,54 +122,53 @@ public class EditSocketDialog  extends DialogFragment implements AdapterView.OnI
 
     }
 
-
     private void initialize(View view)
     {
         ViewRemoteDataModel viewRemoteDataModel = new ViewModelProvider(requireActivity()).get(ViewRemoteDataModel.class);
-        SocketViewAdapter mAdapter = viewRemoteDataModel.getDataModel().getValue();
+        mAdapter = viewRemoteDataModel.getDataModel().getValue();
 
-        // die Eingqabefelder explizit
-        TextInputEditText editorName = view.findViewById(R.id.edit_socket_name);
-        TextInputEditText editorHouse = view.findViewById(R.id.edit_socket_housecode);
-        TextInputEditText editorRemote = view.findViewById(R.id.edit_socket_remotecode);
-        Spinner spin = (Spinner) view.findViewById(R.id.type_spinner);
-
-        if(mAdapter.getSelectedPos() >= 0)
+        if (mAdapter.getSelectedPos() >= 0)
         {
-            // der selektierte Datensatz
-            RemoteData remoteData = mAdapter.getmDataSet().get(mAdapter.getSelectedPos());
+            remoteData = mAdapter.getmDataSet().get(mAdapter.getSelectedPos());
+            remoteDataClone = (RemoteData) remoteData.clone();
+            binding.setRemotesocket(remoteData);
 
-            editorName.setText(remoteData.getName());
-            editorHouse.setText(remoteData.getHouseCode());
-            editorRemote.setText(remoteData.getRemoteCode());
+            // Spinner fuer Socket-TYPE
+            Spinner spinner = (Spinner) view.findViewById(R.id.type_spinner);
 
-            List<String> values = new ArrayList<>();
-            values.add(remoteData.getType());
-            for(String type : users)
-                if(!values.contains(type))
-                    values.add(type);
-
-            users = values.toArray(new String[values.size()]);
-            ArrayAdapter<String> adapter = new ArrayAdapter<String>(getContext(), android.R.layout.simple_spinner_item, users);
+            // Create an ArrayAdapter using the string array and a default spinner layout
+            // arg: android.R.layout.simple_spinner_item = default-Layout zur Darstellung der gewählten Auswahl
+            // die SpinnerItems sind in 'R.array.sockettype_array'
+            ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getContext(),
+                    R.array.sockettype_array, android.R.layout.simple_spinner_item);
+            // Specify the layout to use when the list of choices appears
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            spin.setAdapter(adapter);
-            spin.setOnItemSelectedListener(this);
+            // Apply the adapter to the spinner
+            spinner.setAdapter(adapter);
+            // Listener (this) informiert ueber Typeselektion
+            spinner.setOnItemSelectedListener(this);
 
-
-        }
-        else
-        {
-            // neuer Datensatz
-            editorName.setText("neuer Schalter");
-            editorHouse.setText("1");
-            editorRemote.setText("A");
+            // Spinner aktualisieren (Abgleich mit Modell-Daten)
+            int pos = getTypeSpinnerPositionInAdapter(adapter, remoteData);
+            if(pos >= 0)
+                spinner.setSelection(pos);
         }
     }
 
-    @Override
-    public void onItemSelected(AdapterView<?> adapterView, View view, int i, long l)
-    {
 
+    // Reaktion auf eine TypeSpinner-Selektion
+    @Override
+    public void onItemSelected(AdapterView<?> parent, View view, int pos, long l)
+    {
+       //android.util.Log.i("EditSocketDialog", "selected Type: "+parent.getItemAtPosition(pos));
+
+       // die Spinnerselektion wird uebernommen
+       Object obj = parent.getItemAtPosition(pos);
+       if((obj instanceof String) && (remoteData != null))
+       {
+           remoteData.setType((String) obj);
+           mAdapter.getmDataSet().set(mAdapter.getSelectedPos(), remoteData);
+       }
     }
 
     @Override
@@ -156,4 +176,50 @@ public class EditSocketDialog  extends DialogFragment implements AdapterView.OnI
     {
 
     }
+
+    @Override
+    public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent)
+    {
+        return false;
+    }
+
+    private static int getTypeSpinnerPositionInAdapter(ArrayAdapter<CharSequence> adapter, RemoteData remoteData)
+    {
+        if (adapter != null && remoteData != null)
+        {
+            for (int i = 0; i < adapter.getCount(); i++)
+            {
+                String adapterType = adapter.getItem(i).toString();
+                if (adapterType != null && remoteData.getName() != null && adapterType.equals(remoteData.getType()))
+                {
+                    return i;
+                }
+            }
+        }
+        return (-1);
+    }
+
+    /*
+    @BindingAdapter(value = {"android:type", "android:typeAttrChanged"}, requireAll = false)
+    public static void bindPlanetSelected(final AppCompatSpinner spinner, RemoteData remoteDataByViewModel,
+                                          final InverseBindingListener inverseBindingListener)
+    {
+        android.util.Log.i("EditSocketDialog", "BindingAdapter: "+spinner.getSelectedItem());
+    }
+
+ */
+
+
+
+
+/*
+    @InverseBindingAdapter(attribute = "android:type", event = "android:typeAttrChanged")
+    public static RemoteData captureSelectedType(AppCompatSpinner spinner)
+    {
+        android.util.Log.i("EditSocketDialog", "InverseBindingAdapter: "+spinner.getSelectedItem());
+        return (RemoteData) spinner.getSelectedItem();
+    }
+
+ */
+
 }

@@ -40,6 +40,11 @@ public class FakeDataFetcher {
 
     private Context context = MainActivity.getAppContext();
 
+    static public final String SOCKET_TYPE_A = "A";
+    static public final String SOCKET_TYPE_B = "B";
+    static public final String SOCKET_TYPE_C = "C";
+
+
     /*
     @WorkerThread
     public String getData() throws DataFetchException {
@@ -182,10 +187,10 @@ public class FakeDataFetcher {
                             String type = parseMap.get("type");
 
                             // mit den geparsten XML-Socketdaten realen Socket generieren
-                            if(type.equals(RemoteData.SOCKET_TYPE_A))
+                            if(type.equals(SOCKET_TYPE_A))
                             {
                                 // Type A Socket (Haus- und Remote(Receiver)code
-                                RemoteData socket = new RemoteData(parseMap.get("name"), RemoteData.SOCKET_TYPE_A, parseMap.get("houseCode"), parseMap.get("remoteCode"));
+                                RemoteData socket = new RemoteData(parseMap.get("name"), SOCKET_TYPE_A, parseMap.get("houseCode"), parseMap.get("remoteCode"));
                                 sockets.add(socket);
                             }
                         }
@@ -319,7 +324,7 @@ public class FakeDataFetcher {
         xmlSerializer.text(socketData.getName());
         xmlSerializer.endTag("", "name");
 
-        if (socketData.getType().equals(RemoteData.SOCKET_TYPE_A))
+        if (socketData.getType().equals(SOCKET_TYPE_A))
         {
             // type
             xmlSerializer.startTag("", "type");
@@ -346,10 +351,10 @@ public class FakeDataFetcher {
     private List<RemoteData> getDefaultModel()
     {
         List<RemoteData> list = new ArrayList<RemoteData>();
-        list.add(new RemoteData("Pumpe1", RemoteData.SOCKET_TYPE_A, "1", "1"));
-        list.add(new RemoteData("Pumpe2", RemoteData.SOCKET_TYPE_A, "1", "2"));
-        list.add(new RemoteData("Skimmer", RemoteData.SOCKET_TYPE_A, "1", "4"));
-        list.add(new RemoteData("Strahler", RemoteData.SOCKET_TYPE_A, "1", "8"));
+        list.add(new RemoteData("Pumpe1", SOCKET_TYPE_A, "1", "1"));
+        list.add(new RemoteData("Pumpe2", SOCKET_TYPE_A, "1", "2"));
+        list.add(new RemoteData("Skimmer", SOCKET_TYPE_A, "1", "4"));
+        list.add(new RemoteData("Strahler", SOCKET_TYPE_A, "1", "8"));
         return list;
     }
 

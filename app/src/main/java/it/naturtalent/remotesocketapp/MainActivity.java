@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
 
         context = getApplicationContext();
 
-        // Tololbar erzeugen und ActionBar ersetzen (Titel aus AndroidManifest)
+        // Toolbar erzeugen und ActionBar ersetzen (Titel aus AndroidManifest)
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setTitle(R.string.title_toolbar);
         setSupportActionBar(toolbar);
@@ -98,12 +98,8 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
     @Override
     public boolean onCreateOptionsMenu(Menu menu)
     {
-        // Inflate the menu; this adds items to the action bar if it is present.
+        // Inflate the menu; this adds items ('settings', 'delete', 'reload' ...) to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-
-        
-
-
 
         return true;
     }
@@ -158,7 +154,7 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
         */
 
 
-        // Toolbar Edit Aktion
+        // Toolbar 'EDIT' Aktion
         if (id == R.id.action_edit)
         {
             //android.util.Log.d("MainActivity", "Edit Action");

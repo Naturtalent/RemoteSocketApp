@@ -25,6 +25,14 @@
     <string name="input_label_name">Bezeichnung</string>
     <string name="input_label_remotecode">Remote Code</string>
     <string name="input_label_housecode">House Code</string>
+
+    <string-array name="sockettype_array">
+        <item>A</item>
+        <item>B</item>
+        <item>X</item>
+    </string-array>
+
+
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

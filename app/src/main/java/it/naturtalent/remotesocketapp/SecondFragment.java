@@ -46,7 +46,7 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
     {
         super.onCreate(savedInstanceState);
 
-        // FFagmentResultListener meldet 'ADD'
+        // FRagmentResultListener meldet 'ADD'
         getParentFragmentManager().setFragmentResultListener("addSocketKey", this, new FragmentResultListener() {
             @Override
             public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle bundle)
@@ -62,15 +62,19 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
             }
         });
 
-        // FragmentResultListener meldet 'EDIT' Aktion
+        // FragmentResultListener zur Meldung einer 'EDIT' Aktion vorbereiten
         getParentFragmentManager().setFragmentResultListener("editSocketKey", this, new FragmentResultListener() {
             @Override
             public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle bundle)
             {
                 if((mAdapter.getmDataSet() != null) && (mAdapter.getmDataSet().size() > 1))
                 {
+                    // FragmentResultListener meldet 'EDIT' Aktion
                     android.util.Log.d("SecondFragment", "Edit Aktion  'editSocketKey'");
 
+                    //RemoteData remoteSocket = mAdapter.getmDataSet().get(mAdapter.getSelectedPos());
+
+                    // einen EditDialog erzeugen, anzeigen und Datensatz editieren
                     DialogFragment dialogFragment = EditSocketDialog.newInstance(R.string.title_dialog_edit);
                     dialogFragment.show(getActivity().getSupportFragmentManager(),"dialog");
 
@@ -84,7 +88,7 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
             }
         });
 
-        // FragmentResultListener meldet 'DELETE' Aktion
+        // FragmentResultListener zur Meldung einer 'DELETE' Aktion vorbereiten
         getParentFragmentManager().setFragmentResultListener("deleteSocketKey", this, new FragmentResultListener() {
             @Override
             public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle bundle) {
@@ -92,7 +96,7 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
                 selectedIDX = mAdapter.getSelectedPos();
                 if(selectedIDX > 0)
                 {
-                    // Bestaedigungsdialog 'Loeschen'
+                    // FragmentResultListener meldet 'DELETE' Aktion
                     new AlertDialog.Builder(getActivity())
                             .setIcon(R.drawable.delete_icon_gray)
                             .setTitle(R.string.title_dialog_delete)
