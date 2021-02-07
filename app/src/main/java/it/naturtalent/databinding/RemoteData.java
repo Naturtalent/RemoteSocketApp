@@ -1,23 +1,19 @@
 package it.naturtalent.databinding;
 
 
-import android.widget.EditText;
-
 import androidx.databinding.BaseObservable;
 import androidx.databinding.Bindable;
-import androidx.databinding.BindingAdapter;
-import androidx.databinding.InverseBindingAdapter;
 
 import it.naturtalent.remotesocketapp.BR;
 
 // durch gradle tool erzeugete Classe BR
 
-public class RemoteData extends BaseObservable
-{
 
-    static public final String SOCKET_TYPE_A = "A";
-    static public final String SOCKET_TYPE_B = "B";
-    static public final String SOCKET_TYPE_C = "C";
+/**
+ *  View Model
+ */
+public class RemoteData extends BaseObservable implements Cloneable
+{
 
     private String name;
 
@@ -29,14 +25,7 @@ public class RemoteData extends BaseObservable
 
     private String remoteCode;
 
-    public RemoteData(String name, String type, String houseCode, String remoteCode)
-    {
-        this.name = name;
-        this.type = type;
-        this.houseCode = houseCode;
-        this.remoteCode = remoteCode;
-        this.selected = false;
-    }
+    //android:selectedType="@={remotesocket.obvSelectedType}"
 
     @Bindable
     public String getName()
@@ -65,6 +54,7 @@ public class RemoteData extends BaseObservable
     @Bindable
     public String getType()
     {
+        android.util.Log.i("RemoteData", "getType: ");
         return type;
     }
 
@@ -72,6 +62,7 @@ public class RemoteData extends BaseObservable
     {
         this.type = type;
         notifyPropertyChanged(BR.type);
+        android.util.Log.i("RemoteData", "setType: "+type);
     }
 
     @Bindable
@@ -84,6 +75,18 @@ public class RemoteData extends BaseObservable
     {
         this.houseCode = houseCode;
         notifyPropertyChanged(BR.houseCode);
+    }
+
+    @Bindable
+    public String getRemoteCode()
+    {
+        return remoteCode;
+    }
+
+    public void setRemoteCode(String remoteCode)
+    {
+        this.remoteCode = remoteCode;
+        notifyPropertyChanged(BR.remoteCode);
     }
 
     public void validate()
@@ -104,52 +107,32 @@ public class RemoteData extends BaseObservable
         return value;
     }
 
-    @Bindable
-    public String getRemoteCode()
+    /**
+     * Konstruktion
+     *
+     * @param name
+     * @param type
+     * @param houseCode
+     * @param remoteCode
+     */
+    public RemoteData(String name, String type, String houseCode, String remoteCode)
     {
-        return remoteCode;
-    }
-
-    public void setRemoteCode(String remoteCode)
-    {
+        this.name = name;
+        this.type = type;
+        this.houseCode = houseCode;
         this.remoteCode = remoteCode;
-        notifyPropertyChanged(BR.remoteCode);
+        this.selected = false;
     }
 
-    /**
-     * Two-way Anpassung an die 'char' Properties
-     */
-    public static class CharacterBindingAdapter
+    public Object clone()
     {
-        @BindingAdapter("android:text")
-        public static void setText(EditText view, char charType)
+        try
         {
-            view.setText(Character.toString(charType));
+            return super.clone();
         }
-
-        @InverseBindingAdapter(attribute = "android:text")
-        public static char getText(EditText view)
+        catch( CloneNotSupportedException e )
         {
-            return Character.valueOf(view.getText().charAt(0));
-        }
-
-    }
-
-    /**
-     * Two-way Anpassung an die 'short' Properties
-     */
-    public static class IntegerBindingAdapter
-    {
-        @BindingAdapter("android:text")
-        public static void setText(EditText view, short value)
-        {
-            view.setText(String.valueOf(value));
-        }
-
-        @InverseBindingAdapter(attribute = "android:text")
-        public static short getText(EditText view)
-        {
-            return Short.valueOf(view.getText().toString());
+            return null;
         }
     }
 
