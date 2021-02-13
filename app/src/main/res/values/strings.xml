@@ -25,7 +25,10 @@
     <string name="input_label_name">Bezeichnung</string>
     <string name="input_label_remotecode">Remote Code</string>
     <string name="input_label_housecode">House Code</string>
-
+    <string name="dialog_label_ok">ok</string>
+    <string name="dialog_label_continue">weiter</string>
+    <string name="dialog_label_cancel">abbruch</string>
+    <string name="continue_with_default">weiter mit Defaultwerten</string>
     <string-array name="sockettype_array">
         <item>A</item>
         <item>B</item>

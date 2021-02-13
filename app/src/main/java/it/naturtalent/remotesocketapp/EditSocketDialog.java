@@ -17,11 +17,15 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.databinding.DataBindingUtil;
 import androidx.databinding.InverseBindingListener;
 import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.FragmentActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.util.List;
+
 import it.naturtalent.databinding.RemoteData;
+import it.naturtalent.multithread.PushDataUseCase;
 import it.naturtalent.remotesocketapp.databinding.FragmentSocketBinding;
 
 /**
@@ -33,6 +37,8 @@ public class EditSocketDialog  extends DialogFragment implements AdapterView.OnI
     public static String TAG = "EditSocketDialog";
 
     private SocketViewAdapter mAdapter;
+
+    private FragmentActivity fragmentActivity;
 
     // Klasse entsteht durch '<data>' - Definition in 'fragment_socket.xml'
     private FragmentSocketBinding binding;
@@ -80,7 +86,7 @@ public class EditSocketDialog  extends DialogFragment implements AdapterView.OnI
 
         int title = getArguments().getInt("title");
         dialog = new AlertDialog.Builder(getActivity())
-                .setIcon(R.drawable.alert_dialog_dart_icon)
+                .setIcon(R.drawable.edit_message)
                 .setTitle(title)
                 //.setView(R.layout.fragment_socket)
                 .setView(view)
@@ -92,12 +98,71 @@ public class EditSocketDialog  extends DialogFragment implements AdapterView.OnI
                             public void onClick(DialogInterface dialog, int whichButton)
                             {
 
-                                android.util.Log.i("FragmentAlertDialog", "Ok!  ");
+                                android.util.Log.i("FragmentAlertDialog", "Save  ");
 
                                 // den editierten Eintrag in der Liste anzeigen
                                 mAdapter.notifyItemChanged(mAdapter.getSelectedPos());
+
+                                fragmentActivity = getActivity();
+
+                                // Requestdialog 'speichern'
+                                Dialog dialogSave = new AlertDialog.Builder(getActivity())
+                                        .setIcon(R.drawable.save)
+                                        .setTitle("speichern")
+                                        //.setView(R.layout.fragment_socket)
+                                        //.setView(view)
+                                        .setCancelable(true)
+                                        .setPositiveButton(R.string.dialog_label_ok,
+                                                new DialogInterface.OnClickListener()
+                                                {
+                                                    // Listener meldet OK Ende des Dialogs
+                                                    public void onClick(DialogInterface dialog, int whichButton)
+                                                    {
+                                                        android.util.Log.i("FragmentAlertDialog", "Save Ok!  ");
+
+                                                        // die Daten abfragen (ggf. den Datenladevorgang starten) - Ergebnis @see onDataFetched(()
+                                                        //android.util.Log.d("SecondFragment", "Check Data: "+ mAdapter.getmDataSet());
+
+                                                        PushDataUseCase.Listener threadPushPoolListener = new PushDataUseCase.Listener()
+                                                        {
+                                                            @Override
+                                                            public void onDataPushed(List<RemoteData> data)
+                                                            {
+                                                                android.util.Log.d("EditSocketDialog", "erfolgreich gespeichert");
+                                                            }
+
+                                                            @Override
+                                                            public void onDataPushFailed()
+                                                            {
+
+                                                            }
+                                                        };
+
+                                                        RemoteDataUtils remoteDataUtils = new RemoteDataUtils(fragmentActivity, threadPushPoolListener);
+                                                        remoteDataUtils.saveSocketData(mAdapter);
+
+                                                    }
+                                                })
+                                        // nicht speicheern -> weiter
+                                        .setNegativeButton(R.string.dialog_label_continue,
+                                                new DialogInterface.OnClickListener()
+                                                {
+                                                    // Listener meldet ABBRUCH Ende des Dialogs
+                                                    public void onClick(DialogInterface dialog, int whichButton)
+                                                    {
+
+                                                        //it.naturtalent.common.logger.Log.i("FragmentAlertDialog", "Negative click!");
+                                                        android.util.Log.i("FragmentAlertDialog", "nicht speichern!");
+                                                    }
+                                                })
+
+                                        .create();
+                                        dialogSave.show();
+
                             }
                         })
+
+                // Abbruch
                 .setNegativeButton(R.string.load_dialog_cancel,
                         new DialogInterface.OnClickListener()
                         {

@@ -21,6 +21,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_store"
+        android:orderInCategory="101"
+        android:title="Speichern"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_add"
         android:icon="@android:drawable/btn_star_big_off"
         android:orderInCategory="101"

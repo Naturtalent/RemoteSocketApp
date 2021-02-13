@@ -9,6 +9,8 @@ import android.os.Bundle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.ListFragment;
 
 import java.util.List;
@@ -30,6 +32,9 @@ public class RemoteDataUtils
     private ProgressDialog mProgressBar;
 
     private Fragment fragment;
+
+    private FragmentActivity fragmentActivity;
+
 
     // ThreadPool Parameter
     private static FetchDataUseCase mFetchDataUseCase;
@@ -91,10 +96,11 @@ public class RemoteDataUtils
         this.threadPoolListener = threadPoolListener;
     }
 
-    public RemoteDataUtils(Fragment fragment, PushDataUseCase.Listener threadPushPoolListener)
+    public RemoteDataUtils(FragmentActivity fragmentActivity, PushDataUseCase.Listener threadPushPoolListener)
     {
         this.fragment = fragment;
         this.threadPushPoolListener = threadPushPoolListener;
+        this.fragmentActivity = fragmentActivity;
     }
 
 
@@ -174,7 +180,7 @@ public class RemoteDataUtils
         showDialog();
     }
 
-    public void saveSocketData()
+    public void saveSocketData(SocketViewAdapter mAdapter)
     {
         PushDataUseCase mPushDataUseCase =  new ThreadPool().getPushDataUseCase();
 
@@ -189,11 +195,11 @@ public class RemoteDataUtils
 
          */
 
-        // die eigentliche Ladefunktion in einem eigenen Thread starten starten
-        mPushDataUseCase.pushData();
+        // die eigentliche Speicherfunktion in einem eigenen Thread starten starten
+        mPushDataUseCase.pushData(mAdapter);
 
 
-        // Dialog fuer die Dauer des Lade-Threads zeigen
+        // Dialog fuer die Dauer des Speicher-Threads zeigen
         showSaveDialog();
     }
 
@@ -208,7 +214,9 @@ public class RemoteDataUtils
     {
         android.util.Log.i("FragmentAlertDialog", "Dialog Speichern zeigen");
         dialogFragment = InitializeDialogFragment.newInstance(R.string.alert_dialog_savedata_title);
-        dialogFragment.show(fragment.getActivity().getSupportFragmentManager(), "dialog");
+
+        dialogFragment.show(fragmentActivity.getSupportFragmentManager(), "dialog");
+
     }
 
 

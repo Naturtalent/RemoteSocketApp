@@ -2,8 +2,6 @@ package it.naturtalent.multithread;
 
 import android.content.Context;
 
-import android.os.Looper;
-import android.os.Message;
 import android.util.Xml;
 import android.widget.Toast;
 
@@ -24,17 +22,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Handler;
 
 import it.naturtalent.databinding.RemoteData;
 import it.naturtalent.remotesocketapp.MainActivity;
-import it.naturtalent.remotesocketapp.RemoteDataUtils;
 
 public class FakeDataFetcher {
 
     static private String SOCKET_DATA_FILE = "socketdata.xml";
 
     public static class DataFetchException extends Exception {}
+
+    public static class DataPushException extends Exception {}
 
     private boolean mIsError = true;
 
@@ -97,6 +95,32 @@ public class FakeDataFetcher {
         }
     }
 
+    @WorkerThread
+    public void setData(List<RemoteData>remoteData) throws DataPushException
+    {
+        // simulate 2 seconds worth of work
+        try
+        {
+            Thread.sleep(2000);
+
+            // die reale Ladefunktion muss im Fehlerfall eine 'InterruptedException e' werfen
+            doSaveDataList(remoteData);
+
+        } catch (InterruptedException e)
+        {
+            e.printStackTrace();
+        }
+
+        // Fehlerantwort fuer jedes zweite Mal (unklar)
+        mIsError = !mIsError;
+
+        if (mIsError)
+        {
+            throw new DataPushException();
+        }
+    }
+
+
     /**
      *
      * @return
@@ -137,7 +161,7 @@ public class FakeDataFetcher {
 
         try
         {
-            File file = new File(SOCKET_DATA_FILE);
+            File file = new File(context.getFilesDir(), SOCKET_DATA_FILE);
             if (file.exists())
             {
                 BufferedReader input = new BufferedReader(new InputStreamReader(context.openFileInput(SOCKET_DATA_FILE)));
@@ -159,6 +183,9 @@ public class FakeDataFetcher {
                 {
                     if(eventType == XmlPullParser.START_TAG)
                     {
+
+                        android.util.Log.i("Parser", "xpp: "+xpp);
+
                         if(xpp.getName().equals(SOCKET_ELEMENT))
                         {
                             // Start Socket - Map loeschen
@@ -193,6 +220,14 @@ public class FakeDataFetcher {
                                 RemoteData socket = new RemoteData(parseMap.get("name"), SOCKET_TYPE_A, parseMap.get("houseCode"), parseMap.get("remoteCode"));
                                 sockets.add(socket);
                             }
+                            else
+                            {
+                                // @TODO Loesung fuer restliche Types noch erforderlich
+                                // Provisorisch
+                                RemoteData socket = new RemoteData(parseMap.get("name"), type, parseMap.get("houseCode"), parseMap.get("remoteCode"));
+                                sockets.add(socket);
+
+                            }
                         }
                     }
                     eventType = xpp.next();
@@ -214,7 +249,7 @@ public class FakeDataFetcher {
         return sockets;
     }
 
-
+/*
     @WorkerThread
     public List<RemoteData> pushData(List<RemoteData>remoteData) throws DataFetchException
     {
@@ -243,12 +278,19 @@ public class FakeDataFetcher {
         }
     }
 
+ */
+
     /**
      *
      * @return
      */
-    public void doPushDataList(List<RemoteData>remoteData)  throws DataFetchException
+    public void doSaveDataList(List<RemoteData>remoteData)  throws DataPushException
     {
+
+        android.util.Log.i("FragmentAlertDialog", "Save Ok!  ");
+
+        saveSockets(remoteData);
+
         //List<RemoteData>remoteDateList = getDefaultModel();
 
         //List<RemoteData>remoteDateList = loadSockets ();
@@ -270,45 +312,62 @@ public class FakeDataFetcher {
     /**
      * RemoteSockets in Datei peichern
      *
-     * @param context
      * @param sockets
      */
-    public void saveSockets(Context context, List<RemoteData> sockets)
+    public void saveSockets(List<RemoteData> sockets)
     {
-        if (sockets == null)
-            sockets = getDefaultModel();
-
-        XmlSerializer xmlSerializer = Xml.newSerializer();
-        StringWriter writer = new StringWriter();
-        try
+        if ((sockets != null) && (!sockets.isEmpty()))
         {
-            xmlSerializer.setOutput(writer);
 
-            // Start Document
-            xmlSerializer.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true);
-            xmlSerializer.startDocument("UTF-8", true);
-
-            // Open Tag <sockets>
-            xmlSerializer.startTag("", "RemoteSockets");
-
-            for (RemoteData socket : sockets)
+            XmlSerializer xmlSerializer = Xml.newSerializer();
+            StringWriter writer = new StringWriter();
+            try
             {
-                serializeSocket(xmlSerializer, socket);
-                xmlSerializer.flush();
+                xmlSerializer.setOutput(writer);
+
+                // Start Document
+                xmlSerializer.setFeature("http://xmlpull.org/v1/doc/features.html#indent-output", true);
+                xmlSerializer.startDocument("UTF-8", true);
+
+                // Open Tag <sockets>
+                xmlSerializer.startTag("", "RemoteSockets");
+
+                for (RemoteData socket : sockets)
+                {
+                    serializeSocket(xmlSerializer, socket);
+                    xmlSerializer.flush();
+                }
+
+                // Ende der Sockets
+                xmlSerializer.endTag("", "RemoteSockets");
+
+                // Ende des Dokuments
+                xmlSerializer.endDocument();
+
+
+                File file = new File(SOCKET_DATA_FILE);
+                if (file.exists())
+                {
+                    Toast.makeText(context, "Datei kann nicht erzeugt werden, Berechtigung?", Toast.LENGTH_SHORT).show();
+                    throw new DataPushException();
+                }
+
+
+
+
+                FileOutputStream openFileOutput = context.openFileOutput(SOCKET_DATA_FILE, Context.MODE_PRIVATE);
+                openFileOutput.write(writer.toString().getBytes());
+                openFileOutput.close();
+
+                file = new File(context.getFilesDir(), SOCKET_DATA_FILE);
+                if (file.exists())
+                    android.util.Log.i("FragmentAlertDialog", "nicht speichern!");
+
+
+            } catch (IOException | DataPushException e)
+            {
+                e.printStackTrace();
             }
-
-            // Ende der Sockets
-            xmlSerializer.endTag("", "RemoteSockets");
-
-            // Ende des Dokuments
-            xmlSerializer.endDocument();
-
-            FileOutputStream openFileOutput = context.openFileOutput(SOCKET_DATA_FILE, Context.MODE_PRIVATE);
-            openFileOutput.write(writer.toString().getBytes());
-
-        } catch (IOException e)
-        {
-            e.printStackTrace();
         }
     }
 
@@ -341,6 +400,26 @@ public class FakeDataFetcher {
             xmlSerializer.text(socketData.getRemoteCode());
             xmlSerializer.endTag("", "remoteCode");
         }
+        else // @TODO Loesung fuer restliche Types noch erforderlich
+        {
+            // Provisorium
+
+            // type
+            xmlSerializer.startTag("", "type");
+            xmlSerializer.text(socketData.getType());
+            xmlSerializer.endTag("", "type");
+
+            // houseCode
+            xmlSerializer.startTag("", "houseCode");
+            xmlSerializer.text(socketData.getHouseCode());
+            xmlSerializer.endTag("", "houseCode");
+
+            // remoteCode
+            xmlSerializer.startTag("", "remoteCode");
+            xmlSerializer.text(socketData.getRemoteCode());
+            xmlSerializer.endTag("", "remoteCode");
+
+        }
 
 
         // ende Element Socket
@@ -348,7 +427,7 @@ public class FakeDataFetcher {
     }
 
 
-    private List<RemoteData> getDefaultModel()
+    public List<RemoteData> getDefaultModel()
     {
         List<RemoteData> list = new ArrayList<RemoteData>();
         list.add(new RemoteData("Pumpe1", SOCKET_TYPE_A, "1", "1"));

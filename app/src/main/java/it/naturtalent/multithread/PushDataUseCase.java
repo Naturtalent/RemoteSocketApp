@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import it.naturtalent.databinding.RemoteData;
+import it.naturtalent.remotesocketapp.SocketViewAdapter;
 
 public class PushDataUseCase
 {
@@ -51,7 +52,7 @@ public class PushDataUseCase
         mListeners.remove(listener);
     }
 
-    public void pushData()
+    public void pushData(final SocketViewAdapter mAdapter)
     {
         // offload work to background thread
         mBackgroundThreadPoster.post(new Runnable()
@@ -59,14 +60,17 @@ public class PushDataUseCase
             @Override
             public void run()
             {
-                pushDataSync();
+                pushDataSync(mAdapter);
             }
         });
     }
 
     @WorkerThread
-    private void pushDataSync()
+    private void pushDataSync(SocketViewAdapter mAdapter)
     {
+        try
+        {
+        mFakeDataFetcher.setData(mAdapter.getmDataSet());
 
         mUiThreadPoster.post(new Runnable()
         { // notify listeners on UI thread
@@ -76,7 +80,17 @@ public class PushDataUseCase
                 notifySuccess(null);
             }
         });
-
+        } catch (FakeDataFetcher.DataPushException e)
+        {
+            mUiThreadPoster.post(new Runnable()
+            { // notify listeners on UI thread
+                @Override
+                public void run()
+                {
+                    notifyFailure();
+                }
+            });
+        }
         /*
         try
         {

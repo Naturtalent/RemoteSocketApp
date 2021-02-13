@@ -23,7 +23,5 @@ public class ThreadPool extends Application {
 
     private final PushDataUseCase mPushDataUseCase =
             new PushDataUseCase(mFakeDataFetcher, mBackgroundThreadPoster, mUiThreadPoster);
-    public PushDataUseCase getPushDataUseCase() {
-        return mPushDataUseCase;
-    }
+    public PushDataUseCase getPushDataUseCase() {return mPushDataUseCase; }
 }

@@ -1,6 +1,7 @@
 package it.naturtalent.remotesocketapp;
 
 
+import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -22,7 +23,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 
 import it.naturtalent.databinding.RemoteData;
+import it.naturtalent.multithread.FakeDataFetcher;
 import it.naturtalent.multithread.FetchDataUseCase;
+import it.naturtalent.multithread.PushDataUseCase;
 
 /*
     Diese Klasse implementiert einen 'FetchDataUseCase.Listener'.
@@ -45,6 +48,37 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
     public void onCreate(@Nullable Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+
+        // FRagmentResultListener meldet 'ADD'
+        getParentFragmentManager().setFragmentResultListener("storeSocketKey", this, new FragmentResultListener() {
+            @Override
+            public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle bundle)
+            {
+                if((mAdapter.getmDataSet() != null) && (mAdapter.getmDataSet().size() > 1))
+                {
+                    android.util.Log.d("SecondFragment", "recieve addRequestKey");
+
+                    PushDataUseCase.Listener threadPushPoolListener = new PushDataUseCase.Listener()
+                    {
+                        @Override
+                        public void onDataPushed(List<RemoteData> data)
+                        {
+                            android.util.Log.d("EditSocketDialog", "erfolgreich gespeichert");
+                        }
+
+                        @Override
+                        public void onDataPushFailed()
+                        {
+
+                        }
+                    };
+
+                    RemoteDataUtils remoteDataUtils = new RemoteDataUtils(getActivity(), threadPushPoolListener);
+                    remoteDataUtils.saveSocketData(mAdapter);
+
+                }
+            }
+        });
 
         // FRagmentResultListener meldet 'ADD'
         getParentFragmentManager().setFragmentResultListener("addSocketKey", this, new FragmentResultListener() {
@@ -204,10 +238,55 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
     @Override
     public void onDataFetchFailed()
     {
+
+        /*
         // ToDo evtl. Error-Dialog
         Toast.makeText(getContext(), "Fehler beim Lesen der Daten", Toast.LENGTH_SHORT).show();
         NavHostFragment.findNavController(SecondFragment.this).popBackStack();
-        //android.util.Log.i("Datenladevorgang", "Datenladevorgang erfolglos");
+
+         */
+
+
+        Dialog dialogSaveFail = new AlertDialog.Builder(getActivity())
+                .setIcon(R.drawable.save)
+                .setTitle("Fehler beim Laden")
+                //.setView(R.layout.fragment_socket)
+                //.setView(view)
+                .setCancelable(true)
+                .setPositiveButton(R.string.continue_with_default,
+                        new DialogInterface.OnClickListener()
+                        {
+                            // Listener meldet OK Ende des Dialogs
+                            public void onClick(DialogInterface dialog, int whichButton)
+                            {
+                                android.util.Log.i("Loadfailer Dialog", "weiter mit Defaultwerten  ");
+
+                                // die Daten abfragen (ggf. den Datenladevorgang starten) - Ergebnis @see onDataFetched(()
+                                //android.util.Log.d("SecondFragment", "Check Data: "+ mAdapter.getmDataSet());
+
+
+                                List<RemoteData>remoteData = new FakeDataFetcher().getDefaultModel();
+                                mAdapter.setmDataSet(remoteData);
+                                mAdapter.notifyDataSetChanged();
+
+                            }
+                        })
+                // nicht speicheern -> weiter
+                .setNegativeButton(R.string.dialog_label_continue,
+                        new DialogInterface.OnClickListener()
+                        {
+                            // Listener meldet ABBRUCH Ende des Dialogs
+                            public void onClick(DialogInterface dialog, int whichButton)
+                            {
+                                NavHostFragment.findNavController(SecondFragment.this).popBackStack();
+                            }
+                        })
+
+                .create();
+        dialogSaveFail.show();
+
+
+
     }
 
 

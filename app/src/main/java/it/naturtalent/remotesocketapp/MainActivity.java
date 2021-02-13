@@ -115,6 +115,33 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
+        Bundle result = new Bundle();
+        result.putString("addSocketKey", "result");
+        FragmentManager fragmentManager = MainActivity.this.getSupportFragmentManager();
+        List<Fragment> fragments = fragmentManager.getFragments();
+
+        switch (item.getItemId())
+        {
+            case R.id.action_store:
+                fragments.get(0).getChildFragmentManager().setFragmentResult("storeSocketKey", result);
+                break;
+
+            case R.id.action_add:
+                fragments.get(0).getChildFragmentManager().setFragmentResult("addSocketKey", result);
+                break;
+
+            case R.id.action_delete:
+                fragments.get(0).getChildFragmentManager().setFragmentResult("deleteSocketKey", result);
+                break;
+
+            case R.id.action_edit:
+                fragments.get(0).getChildFragmentManager().setFragmentResult("editSocketKey", result);
+                break;
+
+        }
+
+
+
         // Toolbar Settings Aktion
         if (id == R.id.action_settings)
         {
@@ -122,6 +149,16 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
             return true;
         }
 
+        /*
+        if (id == R.id.action_store)
+        {
+            fragments.get(0).getChildFragmentManager().setFragmentResult("storeSocketKey", result);
+            return true;
+        }
+
+         */
+
+/*
         // Toolbar ADD Aktion
         if (id == R.id.action_add)
         {
@@ -136,6 +173,8 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
 
             return true;
         }
+
+ */
 
         // Toolbar Delete Aktion
         /*
@@ -153,6 +192,7 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
         }
         */
 
+        /*
 
         // Toolbar 'EDIT' Aktion
         if (id == R.id.action_edit)
@@ -171,7 +211,11 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
 
 
 
+         */
+
+
         return super.onOptionsItemSelected(item);
+
     }
 
 
