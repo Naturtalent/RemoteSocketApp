@@ -41,6 +41,8 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
     // Index der moentan selektierten Zeile
     private int selectedPos = RecyclerView.NO_POSITION;
 
+    private CustomHolder customHolder;
+
     /*
         Click Listener Funktionalitaet
      */
@@ -53,24 +55,31 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
         void clickEventTwo(Object obj1, Object obj2);
     }
 
+    /**
+     * Uebergibt ein Listenerinterface dessen Event-Funktion aufgerufen wird, wenn
+     * ein Click in einer Listzeile (auf ein SocketData-Item) erfolgt
+     * @param clickInterface
+     */
     public void setClickInterface(ClickInterface clickInterface)
     {
         mClickInterface = clickInterface;
     }
 
-    /*
-        Listener der ersten Spalte (Icon)
+    /**
+        FirstListener reagiert auf Click in die erste Spalte der Zeile (Icon)
      */
     private class FirstClickListener implements View.OnClickListener
     {
         private int mPosition;
         private boolean mClickable;
 
+        // Position kommt von 'onBindViewHolder()'
         void setPosition(int position)
         {
             mPosition = position;
         }
 
+        // clickable - Funktion wird momentan nicht genutzt
         void setClickable(boolean clickable)
         {
             mClickable = clickable;
@@ -81,22 +90,35 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
         {
             if (mClickable)
             {
+                // 'alte' Zeile deselektiern
                 notifyItemChanged(selectedPos);
+
+                android.util.Log.d("SocketViewAdapter", "check Position  alt: "+ selectedPos + "  neu: "+mPosition);
+
+                /*
+
+                if(mPosition >= mDataSet.size())
+                    mPosition = mDataSet.size() - 1;
+                 */
+
+                // 'neue' Zeile selektieren
                 selectedPos = mPosition;
                 notifyItemChanged(selectedPos);
 
+                // Listenerinterface aufrufen und Position uebergeben
                 mClickInterface.clickEventOne(mDataSet.get(mPosition));
             }
         }
     }
 
-    /*
-      Listener der zweiten Spalte (SocketData)
+   /**
+       SecondListener reagiert auf Click in die zweiten Spalte der Zeile (SocketData)
    */
     private class SecondClickListener implements View.OnClickListener
     {
         private int mPosition;
 
+        // Position kommt von 'onBindViewHolder()'
         void setPosition(int position)
         {
             mPosition = position;
@@ -105,10 +127,22 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
         @Override
         public void onClick(View v)
         {
+            // 'alte' Zeile deselektiern
             notifyItemChanged(selectedPos);
-            selectedPos = mPosition;
-            notifyItemChanged(selectedPos); 
 
+            android.util.Log.d("SocketViewAdapter", "check Position  alt: "+ selectedPos + "  neu: "+mPosition);
+
+            /*
+            // 'neue' Zeile selektieren
+            if(mPosition >= mDataSet.size())
+                mPosition = mDataSet.size() - 1;
+
+             */
+
+            selectedPos = mPosition;
+            notifyItemChanged(selectedPos);
+
+            // Listenerinterface aufrufen und Position und View uebergeben
             mClickInterface.clickEventTwo(mDataSet.get(mPosition), v);
         }
     }
@@ -150,18 +184,21 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
 
     // BEGIN_INCLUDE(recyclerViewOnBindViewHolder)
     // Replace the contents of a view (invoked by the layout manager)
+    // Methode wird nicht aufgerufen, bei delete, add, change Items.
     @Override
     public void onBindViewHolder(CustomHolder customHolder, final int position)
     {
-        android.util.Log.d(TAG, "Element " + position + " set.");
+        android.util.Log.d(TAG, "Element " + position + " set."+"customHolder: "+customHolder);
 
         customHolder.itemView.setSelected(selectedPos == position);
+
+        this.customHolder = customHolder;
 
         // Get element from your dataset at this position and replace the contents of the view
         // with that element
         customHolder.getTextView().setText(((RemoteData)mDataSet.get(position)).getName());
 
-        //make all even positions not clickable
+        // Position in die xxxClickListener eintragen
         customHolder.firstClickListener.setClickable(position % 2 == 0);
         customHolder.firstClickListener.setPosition(position);
         customHolder.secondClickListener.setPosition(position);
@@ -218,13 +255,25 @@ public class SocketViewAdapter extends RecyclerView.Adapter<SocketViewAdapter.Cu
         return selectedPos;
     }
 
+
+
+    public int getAdapterPosition()
+    {
+        return customHolder.getAdapterPosition();
+    }
+
+    public CustomHolder getCustomHolder()
+    {
+        return customHolder;
+    }
+
     /*
-    @toDo
-        Selektiert nicht wirklich, sondern dient momentan nur zum Zurueksetzen der 'selectedPos'
-        nach erfolgter Loeschung des selektierten Eintrags @see SecondFragment (loeschen)
-     */
+            @toDo
+                Selektiert nicht wirklich, sondern dient momentan nur zum Zurueksetzen der 'selectedPos'
+                nach erfolgter Loeschung des selektierten Eintrags @see SecondFragment (loeschen)
+             */
     public void setSelectedPos(int selectedPos)
     {
-        this.selectedPos = 0;
+        this.selectedPos = selectedPos;
     }
 }

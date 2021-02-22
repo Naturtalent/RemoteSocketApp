@@ -174,8 +174,13 @@ public class EditSocketDialog  extends DialogFragment implements AdapterView.OnI
                                 android.util.Log.i("FragmentAlertDialog", "Abbruch!");
 
                                 // bei Abbruch den urspruenglichen Datensatz zurueckspeichern
-                                mAdapter.getmDataSet().set(mAdapter.getSelectedPos(), remoteDataClone);
-                                mAdapter.notifyItemChanged(mAdapter.getSelectedPos());
+                                int adapterPos = mAdapter.getAdapterPosition();
+                                if(adapterPos >= 0)
+                                {
+                                    //mAdapter.getmDataSet().set(mAdapter.getSelectedPos(), remoteDataClone);
+                                    mAdapter.getmDataSet().set(adapterPos, remoteDataClone);
+                                    mAdapter.notifyItemChanged(mAdapter.getSelectedPos());
+                                }
                             }
                         })
 
@@ -192,6 +197,14 @@ public class EditSocketDialog  extends DialogFragment implements AdapterView.OnI
         ViewRemoteDataModel viewRemoteDataModel = new ViewModelProvider(requireActivity()).get(ViewRemoteDataModel.class);
         mAdapter = viewRemoteDataModel.getDataModel().getValue();
 
+        //test s
+
+
+        //test e
+
+        mAdapter.notifyItemChanged(3);
+        int checkPos = mAdapter.getSelectedPos();
+        //int checkAdapter = mAdapter.getCustomHolder().getAdapterPosition();
         if (mAdapter.getSelectedPos() >= 0)
         {
             remoteData = mAdapter.getmDataSet().get(mAdapter.getSelectedPos());

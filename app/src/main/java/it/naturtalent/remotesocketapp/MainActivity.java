@@ -105,7 +105,8 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
     }
 
     /*
-        Toolbar - Aktionen (Add, Edit, ...) werden hier abgefangen
+        Toolbar - Aktionen (Add, Edit, ...) werden hier abgefangen und via 'key' und
+        FragmentResultListener an andere Fragmente gemeldet.
      */
     @Override
     public boolean onOptionsItemSelected(MenuItem item)
@@ -115,30 +116,38 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        Bundle result = new Bundle();
-        result.putString("addSocketKey", "result");
+
+        //Bundle result = new Bundle();
+        //result.putString("addSocketKey", "result");
         FragmentManager fragmentManager = MainActivity.this.getSupportFragmentManager();
         List<Fragment> fragments = fragmentManager.getFragments();
 
+        // mit dem Fragmentmanager und abhaengig won der Selektion werden 'keys' gesendet, die in
+        // den Fragmenten mit dem FragmentResultListener abgefragt werden koennen
         switch (item.getItemId())
         {
             case R.id.action_store:
-                fragments.get(0).getChildFragmentManager().setFragmentResult("storeSocketKey", result);
+                fragments.get(0).getChildFragmentManager().setFragmentResult("storeSocketKey", new Bundle());
                 break;
 
             case R.id.action_add:
-                fragments.get(0).getChildFragmentManager().setFragmentResult("addSocketKey", result);
+                fragments.get(0).getChildFragmentManager().setFragmentResult("addSocketKey", new Bundle());
                 break;
 
             case R.id.action_delete:
-                fragments.get(0).getChildFragmentManager().setFragmentResult("deleteSocketKey", result);
+                fragments.get(0).getChildFragmentManager().setFragmentResult("deleteSocketKey", new Bundle());
                 break;
 
             case R.id.action_edit:
-                fragments.get(0).getChildFragmentManager().setFragmentResult("editSocketKey", result);
+                fragments.get(0).getChildFragmentManager().setFragmentResult("editSocketKey", new Bundle());
+                break;
+
+            case R.id.action_reload:
+                fragments.get(0).getChildFragmentManager().setFragmentResult("reloadSocketKey", new Bundle());
                 break;
 
         }
+
 
 
 
@@ -149,6 +158,8 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
             return true;
         }
 
+
+
         /*
         if (id == R.id.action_store)
         {
@@ -158,7 +169,7 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
 
          */
 
-/*
+        /*
         // Toolbar ADD Aktion
         if (id == R.id.action_add)
         {
@@ -173,8 +184,8 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
 
             return true;
         }
+*/
 
- */
 
         // Toolbar Delete Aktion
         /*
@@ -215,7 +226,6 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
 
 
         return super.onOptionsItemSelected(item);
-
     }
 
 
