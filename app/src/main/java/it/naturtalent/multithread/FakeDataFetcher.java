@@ -2,10 +2,17 @@ package it.naturtalent.multithread;
 
 import android.content.Context;
 
+import android.content.DialogInterface;
 import android.util.Xml;
 import android.widget.Toast;
 
 import androidx.annotation.WorkerThread;
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.DialogFragment;
+
+import com.tinkerforge.AlreadyConnectedException;
+import com.tinkerforge.IPConnection;
+import com.tinkerforge.NetworkException;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
@@ -25,6 +32,8 @@ import java.util.Map;
 
 import it.naturtalent.databinding.RemoteData;
 import it.naturtalent.remotesocketapp.MainActivity;
+import it.naturtalent.remotesocketapp.R;
+import it.naturtalent.remotesocketapp.RemoteDataUtils;
 
 public class FakeDataFetcher {
 
@@ -33,6 +42,14 @@ public class FakeDataFetcher {
     public static class DataFetchException extends Exception {}
 
     public static class DataPushException extends Exception {}
+
+    public static class ConnectException extends Exception {
+        public String message;
+        public ConnectException(String message)
+        {
+            this.message = message;
+        }
+    }
 
     private boolean mIsError = true;
 
@@ -435,6 +452,54 @@ public class FakeDataFetcher {
         list.add(new RemoteData("Skimmer", SOCKET_TYPE_A, "1", "4"));
         list.add(new RemoteData("Strahler", SOCKET_TYPE_A, "1", "8"));
         return list;
+    }
+
+    @WorkerThread
+    public IPConnection connectWiFi() throws ConnectException
+    {
+        IPConnection ipConnection = null;
+
+        // simulate 2 seconds worth of work
+        try
+        {
+            Thread.sleep(4000);
+
+            // die reale Connectfunktion muss im Fehlerfall eine 'InterruptedException e' werfen
+            ipConnection = doConnection();
+
+        } catch (InterruptedException | NetworkException | AlreadyConnectedException e)
+        {
+            throw new ConnectException(e.getMessage());
+
+            //e.printStackTrace();
+        }
+
+        // Fehlerantwort fuer jedes zweite Mal (unklar)
+        mIsError = !mIsError;
+
+        if (mIsError)
+        {
+            throw new ConnectException("Multicast Fehler");
+        }
+
+        return ipConnection;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public IPConnection doConnection() throws NetworkException, AlreadyConnectedException
+    {
+        String host;
+        String port;
+
+        host = "NtHost";
+        port = "4223";
+
+        IPConnection ipConnection = new IPConnection();
+        ipConnection.connect(host, Integer.parseInt(port));
+        return ipConnection;
     }
 
 }

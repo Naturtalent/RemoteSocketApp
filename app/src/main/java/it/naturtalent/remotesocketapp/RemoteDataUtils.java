@@ -165,6 +165,9 @@ public class RemoteDataUtils
      */
     public void loadSocketData()
     {
+        // Dialog fuer die Dauer des Lade-Threads zeigen
+        showDialog();
+
         mFetchDataUseCase = new ThreadPool().getFetchDataUseCase();
 
         // den dialogabschalte Listener (s.o.) registrieren
@@ -177,7 +180,7 @@ public class RemoteDataUtils
         mFetchDataUseCase.fetchData();
 
         // Dialog fuer die Dauer des Lade-Threads zeigen
-        showDialog();
+        //showDialog();
     }
 
     public void saveSocketData(SocketViewAdapter mAdapter)

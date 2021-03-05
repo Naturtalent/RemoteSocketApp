@@ -24,4 +24,9 @@ public class ThreadPool extends Application {
     private final PushDataUseCase mPushDataUseCase =
             new PushDataUseCase(mFakeDataFetcher, mBackgroundThreadPoster, mUiThreadPoster);
     public PushDataUseCase getPushDataUseCase() {return mPushDataUseCase; }
+
+    private final ConnectionUseCase mConnectionUseCase =
+            new ConnectionUseCase(mFakeDataFetcher, mBackgroundThreadPoster, mUiThreadPoster);
+    public ConnectionUseCase getConnectionUseCase() {return mConnectionUseCase; }
+
 }

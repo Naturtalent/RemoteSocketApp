@@ -15,18 +15,27 @@
             android:id="@+id/action_FirstFragment_to_SecondFragment"
             app:destination="@id/SecondFragment" />
     </fragment>
+
+
     <fragment
         android:id="@+id/SecondFragment"
         android:name="it.naturtalent.remotesocketapp.SecondFragment"
         android:label="@string/second_fragment_label"
         tools:layout="@layout/fragment_second">
-        <action
-            android:id="@+id/action_SecondFragment_to_socketFragment"
-            app:destination="@id/socketFragment" />
-    </fragment>
-    <fragment
-        android:id="@+id/socketFragment"
-        android:name="it.naturtalent.remotesocketapp.SocketFragment"
-        android:label="fragment_socket"
-        tools:layout="@layout/fragment_socket" />
+
+    <!--
+    <action
+        android:id="@+id/action_SecondFragment_to_socketFragment"
+        app:destination="@id/socketFragment" />
+    -->
+</fragment>
+
+
+<fragment
+    android:id="@+id/SettingsFragment"
+    android:name="it.naturtalent.remotesocketapp.SettingsFragment"
+    android:label="fragment_settings"
+    tools:layout="@xml/root_preferences" />
+
+
 </navigation>

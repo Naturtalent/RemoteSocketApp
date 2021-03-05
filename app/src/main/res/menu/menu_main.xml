@@ -9,6 +9,12 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_connection"
+        android:orderInCategory="101"
+        android:title="@string/action_connection"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_reload"
         android:orderInCategory="101"
         android:title="@string/action_reload"
@@ -24,6 +30,12 @@
         android:id="@+id/action_store"
         android:orderInCategory="101"
         android:title="Speichern"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_single_switch_on"
+        android:orderInCategory="101"
+        android:title="einschalten"
         app:showAsAction="never" />
 
     <item

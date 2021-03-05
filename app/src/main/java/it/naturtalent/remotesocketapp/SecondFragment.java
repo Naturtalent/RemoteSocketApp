@@ -21,6 +21,10 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.tinkerforge.BrickletRemoteSwitch;
+import com.tinkerforge.IPConnection;
+import com.tinkerforge.TinkerforgeException;
+
 import java.util.List;
 
 import it.naturtalent.databinding.RemoteData;
@@ -52,12 +56,38 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
         super.onCreate(savedInstanceState);
 
 
+        // FRagmentResultListener meldet 'Schalter ein'
+        String actionKey = getContext().getString(R.string.actionkey_switch_single_on);
+        getParentFragmentManager().setFragmentResultListener(actionKey, this, new FragmentResultListener()
+        {
+                    @Override
+                    public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle result)
+                    {
+                        android.util.Log.d("SecondFragment", "recieve Key: "+requestKey);
+                        doSwitchSocket(true);
+                    }
+        });
+
+        // FRagmentResultListener meldet 'Schalter aus'
+        actionKey = getContext().getString(R.string.actionkey_switch_single_off);
+        getParentFragmentManager().setFragmentResultListener(actionKey, this, new FragmentResultListener()
+        {
+            @Override
+            public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle result)
+            {
+                android.util.Log.d("SecondFragment", "recieve Key: "+requestKey);
+                doSwitchSocket(false);
+            }
+        });
+
+
         // FRagmentResultListener meldet 'STORE'
-        getParentFragmentManager().setFragmentResultListener("storeSocketKey", this, new FragmentResultListener() {
+        getParentFragmentManager().setFragmentResultListener("storeSocketKey", this, new FragmentResultListener()
+        {
             @Override
             public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle bundle)
             {
-                if((mAdapter.getmDataSet() != null) && (mAdapter.getmDataSet().size() > 1))
+                if ((mAdapter.getmDataSet() != null) && (mAdapter.getmDataSet().size() > 1))
                 {
                     android.util.Log.d("SecondFragment", "recieve addRequestKey");
 
@@ -88,7 +118,8 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
             @Override
             public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle bundle)
             {
-                if((mAdapter.getmDataSet() != null) && (mAdapter.getmDataSet().size() > 1))
+                //if((mAdapter.getmDataSet() != null) && (mAdapter.getmDataSet().size() > 1))
+                if(mAdapter.getmDataSet() != null)
                 {
                     android.util.Log.d("SecondFragment", "reload");
                     RemoteDataUtils remoteDataUtils = new RemoteDataUtils(SecondFragment.this, SecondFragment.this);
@@ -103,7 +134,7 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
             @Override
             public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle bundle)
             {
-                if((mAdapter.getmDataSet() != null) && (mAdapter.getmDataSet().size() > 1))
+                if((mAdapter.getmDataSet() != null) && (mAdapter.getmDataSet().size() >= 0))
                 {
                     int curPos = mAdapter.getSelectedPos();
 
@@ -168,7 +199,7 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
             @Override
             public void onFragmentResult(@NonNull String requestKey, @NonNull Bundle bundle)
             {
-                if((mAdapter.getmDataSet() != null) && (mAdapter.getmDataSet().size() > 1))
+                if((mAdapter.getmDataSet() != null) && (mAdapter.getmDataSet().size() >= 1))
                 {
                     // FragmentResultListener meldet 'EDIT' Aktion
                     android.util.Log.d("SecondFragment", "Edit Aktion  'editSocketKey'");
@@ -212,22 +243,29 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
                                             // den selektierten Eintrag loeschen
                                             //mAdapter.notifyItemChanged(selectedIDX);
 
-                                            RemoteData test = mAdapter.getmDataSet().get(selectedIDX);
+                                            // selektierten Eintrag aus dem Modell entfernen
                                             List<RemoteData> model = mAdapter.getmDataSet();
                                             model.remove(selectedIDX);
-                                            mAdapter.notifyDataSetChanged();
+
+                                            //mAdapter.notifyDataSetChanged();
 
                                             //mAdapter.setSelectedPos(dataList.size() - 1);
 
-                                            // Index anpassen, wenn letzter Eintrag im Modell geloscht wird
-                                            // Korrektur bringt nichts, der letzte Eintrag wird nicht hoghlighted selected
+
                                             if (selectedIDX >= mAdapter.getmDataSet().size())
                                             {
+                                                // Index anpassen, wenn letzter Eintrag im Modell geloescht wird
+                                                mAdapter.notifyItemRemoved(selectedIDX);
+                                                mAdapter.notifyDataSetChanged();
                                                 selectedIDX--;
                                                 mAdapter.setSelectedPos(selectedIDX);
+                                                mAdapter.notifyDataSetChanged();
                                             }
                                             else
                                             {
+                                                mAdapter.notifyItemRemoved(selectedIDX);
+                                                // mAdapter.notifyItemRemoved(selectedIDX);
+                                                mAdapter.notifyDataSetChanged();
                                                 //selectedIDX++;
                                                 //mAdapter.setSelectedPos(selectedIDX);
                                             }
@@ -235,8 +273,9 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
                                             //mAdapter.setSelectedPos(selectedIDX);
 
                                             android.util.Log.d("SecondFragment", "selected Index: "+selectedIDX+"   modelSize: "+mAdapter.getmDataSet().size());
-                                            mAdapter.notifyItemRemoved(selectedIDX);
                                             //mAdapter.notifyItemRemoved(selectedIDX);
+                                           // mAdapter.notifyItemRemoved(selectedIDX);
+                                            //mAdapter.notifyDataSetChanged();
 
 
 
@@ -274,7 +313,14 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
     }
 
 
-
+    /**
+     * Socket - Daten laden und im RecyclerView anzeigen
+     *
+     * @param inflater
+     * @param container
+     * @param savedInstanceState
+     * @return
+     */
     @Override
     public View onCreateView(
             LayoutInflater inflater, final ViewGroup container, Bundle savedInstanceState)
@@ -344,22 +390,13 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
         mAdapter.notifyDataSetChanged();
     }
 
-
     /*
         Listener meldet erfoglosen Datenladevorgang
      */
     @Override
     public void onDataFetchFailed()
     {
-
-        /*
-        // ToDo evtl. Error-Dialog
-        Toast.makeText(getContext(), "Fehler beim Lesen der Daten", Toast.LENGTH_SHORT).show();
-        NavHostFragment.findNavController(SecondFragment.this).popBackStack();
-
-         */
-
-
+        // Dialog zeigt Fehler beim Laden
         Dialog dialogSaveFail = new AlertDialog.Builder(getActivity())
                 .setIcon(R.drawable.save)
                 .setTitle("Fehler beim Laden")
@@ -397,10 +434,63 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
 
                 .create();
         dialogSaveFail.show();
+    }
 
 
+    // ein-/ausschalten
+    // UID des Remote Switch Bricklet
+    private static final String UID = "v1T";
+
+    private void doSwitchSocket(boolean switchState)
+    {
+        ViewModelProvider viewModelProvider = new ViewModelProvider(requireActivity());
+        SharedIPConnectionModel ipConnectionModel = viewModelProvider.get(SharedIPConnectionModel.class);
+        IPConnection ipcon = ipConnectionModel.getIpConnection();
+
+        if (ipcon != null)
+        {
+            short switchCode = (switchState) ? BrickletRemoteSwitch.SWITCH_TO_ON : BrickletRemoteSwitch.SWITCH_TO_OFF;
+            BrickletRemoteSwitch rs = new BrickletRemoteSwitch(UID, ipcon);
+
+            RemoteData remoteSocket = mAdapter.getmDataSet().get(mAdapter.getSelectedPos());
+            try
+            {
+                rs.switchSocketA(new Short(remoteSocket.getHouseCode()).shortValue(), new Short(remoteSocket.getRemoteCode()).shortValue(), switchCode);
+            } catch (TinkerforgeException e)
+            {
+                e.printStackTrace();
+            }
+
+          /*
+            List<RemoteData> remoteSockets = ((InteractiveArrayAdapter) adapter).getList();
+            if ((remoteSockets != null) && (!remoteSockets.isEmpty()))
+            {
+                for (RemoteData remoteSocket : remoteSockets)
+                {
+                    if (remoteSocket.isSelected())
+                    {
+                        // nur die selektierten Sockets werden geschaltet
+                        try
+                        {
+                            rs.switchSocketA(new Short(remoteSocket.getHouseCode()).shortValue(), new Short(remoteSocket.getRemoteCode()).shortValue(), switchCode);
+                            Thread.sleep(500);
+                            System.out.println(remoteSocket.getName() + " schalten");
+                        } catch (Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+
+
+           */
+
+        }
 
     }
+
+
 
 
 }

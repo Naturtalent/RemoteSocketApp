@@ -34,7 +34,7 @@ public class FirstFragment extends Fragment
             {
                 new AlertDialog.Builder(getActivity())
                         .setIcon(R.drawable.add_icon)
-                        .setTitle(R.string.title_dialog_add)
+                        .setTitle(R.string.title_dialog_add+"Firstfragment")
                         .setCancelable(true)
                         .setPositiveButton(R.string.alert_dialog_ok,
                                 new DialogInterface.OnClickListener()
@@ -60,7 +60,7 @@ public class FirstFragment extends Fragment
             {
                 new AlertDialog.Builder(getActivity())
                         .setIcon(R.drawable.delete_icon_gray)
-                        .setTitle(R.string.title_dialog_delete)
+                        .setTitle(R.string.title_dialog_delete+"Firstfragment")
                         .setCancelable(true)
                         .setPositiveButton(R.string.alert_dialog_ok,
                                 new DialogInterface.OnClickListener()
@@ -105,7 +105,7 @@ public class FirstFragment extends Fragment
     {
         super.onViewCreated(view, savedInstanceState);
 
-        // OnClickListener des Button navigiert zu SecondFragment
+        // OnClickListener des 'next' - Button navigiert zum SecondFragment
         view.findViewById(R.id.button_first).setOnClickListener(new View.OnClickListener()
         {
             @Override
