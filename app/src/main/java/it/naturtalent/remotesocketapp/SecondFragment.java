@@ -3,12 +3,10 @@ package it.naturtalent.remotesocketapp;
 
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -22,6 +20,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.tinkerforge.BrickletRemoteSwitch;
+import com.tinkerforge.BrickletRemoteSwitchV2;
 import com.tinkerforge.IPConnection;
 import com.tinkerforge.TinkerforgeException;
 
@@ -106,7 +105,7 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
                         }
                     };
 
-                    RemoteDataUtils remoteDataUtils = new RemoteDataUtils(getActivity(), threadPushPoolListener);
+                    RemoteDataUtils remoteDataUtils = new RemoteDataUtils(threadPushPoolListener);
                     remoteDataUtils.saveSocketData(mAdapter);
 
                 }
@@ -122,7 +121,7 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
                 if(mAdapter.getmDataSet() != null)
                 {
                     android.util.Log.d("SecondFragment", "reload");
-                    RemoteDataUtils remoteDataUtils = new RemoteDataUtils(SecondFragment.this, SecondFragment.this);
+                    RemoteDataUtils remoteDataUtils = new RemoteDataUtils(SecondFragment.this);
                     remoteDataUtils.loadSocketData();
 
                 }
@@ -365,7 +364,7 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
 
         // die Daten abfragen (ggf. den Datenladevorgang starten) - Ergebnis @see onDataFetched(()
         //android.util.Log.d("SecondFragment", "Check Data: "+ mAdapter.getmDataSet());
-        RemoteDataUtils remoteDataUtils = new RemoteDataUtils(this, this);
+        RemoteDataUtils remoteDataUtils = new RemoteDataUtils(this);
         remoteDataUtils.loadSocketData();
 
         android.util.Log.d("SecondFragment", "start loading");
@@ -436,59 +435,234 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
         dialogSaveFail.show();
     }
 
+    /*
+    *
+            Tinkerforge Schaltvorgaenge
+    *
+     */
 
-    // ein-/ausschalten
     // UID des Remote Switch Bricklet
     private static final String UID = "v1T";
 
     private void doSwitchSocket(boolean switchState)
     {
+        // die IPconnection aus dem ViewModel lesen
         ViewModelProvider viewModelProvider = new ViewModelProvider(requireActivity());
         SharedIPConnectionModel ipConnectionModel = viewModelProvider.get(SharedIPConnectionModel.class);
         IPConnection ipcon = ipConnectionModel.getIpConnection();
 
         if (ipcon != null)
         {
-            short switchCode = (switchState) ? BrickletRemoteSwitch.SWITCH_TO_ON : BrickletRemoteSwitch.SWITCH_TO_OFF;
+            // ein Deviceobjekt erzeugen
             BrickletRemoteSwitch rs = new BrickletRemoteSwitch(UID, ipcon);
+            rs.addSwitchingDoneListener(new BrickletRemoteSwitch.SwitchingDoneListener()
+            {
+                @Override
+                public void switchingDone()
+                {
+                    android.util.Log.d("SecondFragment", "Schaltvorgang ist erfolgt");
+                }
+            });
 
+            short switchCode = (switchState) ? BrickletRemoteSwitch.SWITCH_TO_ON : BrickletRemoteSwitch.SWITCH_TO_OFF;
+
+            // Daten des selektierten Schalters ermitteln
             RemoteData remoteSocket = mAdapter.getmDataSet().get(mAdapter.getSelectedPos());
             try
             {
-                rs.switchSocketA(new Short(remoteSocket.getHouseCode()).shortValue(), new Short(remoteSocket.getRemoteCode()).shortValue(), switchCode);
-            } catch (TinkerforgeException e)
-            {
-                e.printStackTrace();
-            }
-
-          /*
-            List<RemoteData> remoteSockets = ((InteractiveArrayAdapter) adapter).getList();
-            if ((remoteSockets != null) && (!remoteSockets.isEmpty()))
-            {
-                for (RemoteData remoteSocket : remoteSockets)
+                try
                 {
-                    if (remoteSocket.isSelected())
-                    {
-                        // nur die selektierten Sockets werden geschaltet
-                        try
-                        {
-                            rs.switchSocketA(new Short(remoteSocket.getHouseCode()).shortValue(), new Short(remoteSocket.getRemoteCode()).shortValue(), switchCode);
-                            Thread.sleep(500);
-                            System.out.println(remoteSocket.getName() + " schalten");
-                        } catch (Exception e)
-                        {
-                            e.printStackTrace();
-                        }
-                    }
+                    // Schaltvorgang durchfuehren
+                    rs.switchSocketA(new Short(remoteSocket.getHouseCode()).shortValue(), new Short(remoteSocket.getRemoteCode()).shortValue(), switchCode);
+                } catch (TinkerforgeException e)   //catch (TinkerforgeException e; NumberFormatException ex)
+                {
+                    // Fehler - es besteht keine WiFi-Verbindung mehr
+                    new AlertDialog.Builder(getActivity())
+                            .setIcon(R.drawable.delete_icon_gray)
+                            .setTitle(R.string.alert_dialog_socketswitcherror_title)
+                            .setCancelable(true)
+                            .setPositiveButton(R.string.alert_dialog_ok,
+                                    new DialogInterface.OnClickListener()
+                                    {
+                                        public void onClick(DialogInterface dialog, int whichButton)
+                                        {
+                                            // tut nichts
+                                        }
+                                    })
+                            .create().show();
                 }
+            } catch (NumberFormatException e)
+            {
+                // die Socketdaten sind fehlerhaft
+                new AlertDialog.Builder(getActivity())
+                        .setIcon(R.drawable.delete_icon_gray)
+                        .setTitle(R.string.alert_dialog_wrongdataformat_title)
+                        .setCancelable(true)
+                        .setPositiveButton(R.string.alert_dialog_ok,
+                                new DialogInterface.OnClickListener()
+                                {
+                                    public void onClick(DialogInterface dialog,
+                                                        int whichButton)
+                                    {
+                                        // den selektierten Eintrag loeschen
+
+                                    }
+
+                                })
+                        .create().show();
             }
-
-
-           */
-
         }
 
     }
+
+
+    /*
+            V2 - API  (Ungetestet - Hardware fehlt bisher)
+     */
+
+    private static final String UID_V2 = "XYZ";
+    private void doSwitchSocket_V2(boolean switchState)
+    {
+        // die IPconnection aus dem ViewModel lesen
+        ViewModelProvider viewModelProvider = new ViewModelProvider(requireActivity());
+        SharedIPConnectionModel ipConnectionModel = viewModelProvider.get(SharedIPConnectionModel.class);
+        IPConnection ipcon = ipConnectionModel.getIpConnection();
+
+        if (ipcon != null)
+        {
+            // Daten des selektierten Schalters ermitteln
+            RemoteData remoteSocket = mAdapter.getmDataSet().get(mAdapter.getSelectedPos());
+            try
+            {
+                try
+                {
+                    // ein Deviceobjekt erzeugen
+                    BrickletRemoteSwitchV2 rs = new BrickletRemoteSwitchV2(UID_V2, ipcon);
+
+                    int state = rs.getSwitchingState();
+
+                    rs.switchSocketA(new Short(remoteSocket.getHouseCode()).shortValue(), new Short(remoteSocket.getRemoteCode()).shortValue(),
+                            (switchState) ? BrickletRemoteSwitchV2.SWITCH_TO_ON : BrickletRemoteSwitchV2.SWITCH_TO_OFF);
+                } catch (TinkerforgeException e)   //catch (TinkerforgeException e; NumberFormatException ex)
+                {
+                    // Fehler - es besteht keine WiFi-Verbindung mehr
+                    new AlertDialog.Builder(getActivity())
+                            .setIcon(R.drawable.delete_icon_gray)
+                            .setTitle(R.string.alert_dialog_socketswitcherror_title)
+                            .setCancelable(true)
+                            .setPositiveButton(R.string.alert_dialog_ok,
+                                    new DialogInterface.OnClickListener()
+                                    {
+                                        public void onClick(DialogInterface dialog, int whichButton)
+                                        {
+                                            // tut nichts
+                                        }
+                                    })
+                            .create().show();
+                }
+            } catch (NumberFormatException e)
+            {
+                // die Socketdaten sind fehlerhaft
+                new AlertDialog.Builder(getActivity())
+                        .setIcon(R.drawable.delete_icon_gray)
+                        .setTitle(R.string.alert_dialog_wrongdataformat_title)
+                        .setCancelable(true)
+                        .setPositiveButton(R.string.alert_dialog_ok,
+                                new DialogInterface.OnClickListener()
+                                {
+                                    public void onClick(DialogInterface dialog,
+                                                        int whichButton)
+                                    {
+                                        // den selektierten Eintrag loeschen
+
+                                    }
+
+                                })
+                        .create().show();
+            }
+        }
+    }
+
+    private void doCallBackSocket_V2(boolean switchState) throws TinkerforgeException
+    {
+        // die IPconnection aus dem ViewModel lesen
+        ViewModelProvider viewModelProvider = new ViewModelProvider(requireActivity());
+        SharedIPConnectionModel ipConnectionModel = viewModelProvider.get(SharedIPConnectionModel.class);
+        IPConnection ipcon = ipConnectionModel.getIpConnection();
+
+        if (ipcon != null)
+        {
+            // ein Deviceobjekt erzeugen
+            BrickletRemoteSwitchV2 rs = new BrickletRemoteSwitchV2(UID_V2, ipcon);
+
+            // Configure to receive from remote type A with minimum repeats set to 1 and enable callback
+            rs.setRemoteConfiguration(BrickletRemoteSwitchV2.REMOTE_TYPE_A, 1, true);
+
+            rs.addRemoteStatusAListener(new BrickletRemoteSwitchV2.RemoteStatusAListener()
+            {
+                @Override
+                public void remoteStatusA(int houseCode, int receiverCode, int switchTo, int repeats)
+                {
+                    android.util.Log.d("SecondFragment", "Schaltvorgang ist erfolgt");
+
+
+
+
+                }
+            });
+
+            short switchCode = (switchState) ? BrickletRemoteSwitch.SWITCH_TO_ON : BrickletRemoteSwitch.SWITCH_TO_OFF;
+
+            // Daten des selektierten Schalters ermitteln
+            RemoteData remoteSocket = mAdapter.getmDataSet().get(mAdapter.getSelectedPos());
+            try
+            {
+                try
+                {
+                    // Schaltvorgang durchfuehren
+                    rs.switchSocketA(new Short(remoteSocket.getHouseCode()).shortValue(), new Short(remoteSocket.getRemoteCode()).shortValue(), switchCode);
+                } catch (TinkerforgeException e)   //catch (TinkerforgeException e; NumberFormatException ex)
+                {
+                    // Fehler - es besteht keine WiFi-Verbindung mehr
+                    new AlertDialog.Builder(getActivity())
+                            .setIcon(R.drawable.delete_icon_gray)
+                            .setTitle(R.string.alert_dialog_socketswitcherror_title)
+                            .setCancelable(true)
+                            .setPositiveButton(R.string.alert_dialog_ok,
+                                    new DialogInterface.OnClickListener()
+                                    {
+                                        public void onClick(DialogInterface dialog, int whichButton)
+                                        {
+                                            // tut nichts
+                                        }
+                                    })
+                            .create().show();
+                }
+            } catch (NumberFormatException e)
+            {
+                // die Socketdaten sind fehlerhaft
+                new AlertDialog.Builder(getActivity())
+                        .setIcon(R.drawable.delete_icon_gray)
+                        .setTitle(R.string.alert_dialog_wrongdataformat_title)
+                        .setCancelable(true)
+                        .setPositiveButton(R.string.alert_dialog_ok,
+                                new DialogInterface.OnClickListener()
+                                {
+                                    public void onClick(DialogInterface dialog,
+                                                        int whichButton)
+                                    {
+                                        // den selektierten Eintrag loeschen
+
+                                    }
+
+                                })
+                        .create().show();
+            }
+        }
+
+    }
+
+
 
 
 

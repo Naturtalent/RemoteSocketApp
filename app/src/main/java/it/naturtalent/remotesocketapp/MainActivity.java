@@ -3,8 +3,6 @@ package it.naturtalent.remotesocketapp;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -15,7 +13,6 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavAction;
 import androidx.navigation.NavController;
@@ -25,19 +22,14 @@ import androidx.navigation.NavOptions;
 import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.tinkerforge.BrickletRemoteSwitch;
 import com.tinkerforge.IPConnection;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.Map;
 
 import it.naturtalent.databinding.RemoteData;
 import it.naturtalent.multithread.ConnectionUseCase;
 import it.naturtalent.multithread.FetchDataUseCase;
-import it.naturtalent.multithread.PushDataUseCase;
 import it.naturtalent.multithread.ThreadPool;
 
 
@@ -53,6 +45,9 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
     private DialogFragment connectionDialog;
 
     private IPConnection ipcon;
+
+    // wird zum Zeigen diverse DialogFragmente benoetigt
+    public static FragmentManager fragmentManager;
 
     /*
         Listener informiert ueber das Ergebnis des WiFi-Verbindungsaufbau
@@ -72,6 +67,7 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
             if(connectionDialog != null)
                 connectionDialog.dismiss();
         }
+
 
         // WiFi - Verbindungsaufbau ist gescheitert
         @Override
@@ -155,19 +151,35 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
                 }
             }
         });
+
+        fragmentManager = MainActivity.this.getSupportFragmentManager();
+    }
+
+    /**
+        Beim Starten eine WiFi Verbindung aufbauen
+     */
+    @Override
+    protected void onStart()
+    {
+        super.onStart();
+        doWiFiConnection();
     }
 
     /*
-        ausfuehren der Schaltfunktion der beiden FloatingActionButton (Ein-/Ausschalten)
-        Es wird lediglich eine fragmentübergreifendes Ereignis mit dem 'actionKey' geworfen.
-        Die eigentliche physikalische Schaltfunktkion passiert in den jeweiligen Fragmenten.
-     */
+            ausfuehren der Schaltfunktion der beiden FloatingActionButton (Ein-/Ausschalten)
+            Es wird lediglich eine fragmentübergreifendes Ereignis mit dem 'actionKey' geworfen.
+            Die eigentliche physikalische Schaltfunktkion passiert in den jeweiligen Fragmenten.
+         */
     private void doFloatingAction(String actionKey)
     {
+        // IPConnection kann durch das Speichern in einem ViewModel an die Fragmente
+        // kommuniziert werden
         ViewModelProvider viewModelProvider = new ViewModelProvider(MainActivity.this);
         SharedIPConnectionModel ipConnectionModel = viewModelProvider.get(SharedIPConnectionModel.class);
         ipConnectionModel.setIpConnection(ipcon);
-        getSelectedFragment().getChildFragmentManager().setFragmentResult(actionKey, new Bundle());
+
+        // mit dem 'actionKey' eine Aktion in den Fragmenten porvozieren
+        fragmentManager.getFragments().get(0).getChildFragmentManager().setFragmentResult(actionKey, new Bundle());
     }
 
     /*
@@ -246,110 +258,55 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
                 fragments.get(0).getChildFragmentManager().setFragmentResult("reloadSocketKey", new Bundle());
                 break;
 
+            // Preaferenzen (Settings) definieren
             case R.id.action_settings:
 
                 getSupportFragmentManager().beginTransaction()
-                        .replace(0, new SettingsFragment())
+                        .replace(android.R.id.content, new PrefsFragment())
+                        //.setReorderingAllowed(true)
+                        .addToBackStack("name") // name can be null
                         .commit();
+                break;
 
+            // Wifi-Verbindung aufbauen
+            case R.id.action_connection:
 
+                android.util.Log.d("MainActivity", "Connection Action");
 
+                ConnectionUseCase mConnectionUseCase =  new ThreadPool().getConnectionUseCase();
+
+                // Listener ueberwacht die Connectionaktion (Dialog 'connectionDialog' ausschalten)
+                mConnectionUseCase.registerListener(connectionListener);
+
+                // Verbindungsaufbau im separaten Thread
+                mConnectionUseCase.connectWiFi();
+
+                // Dialog fuer die Dauer des Verbindungsversuchs
+                connectionDialog = showConnectDialog();
 
                 break;
 
 
         }
 
-
-
-
-
-
-        // Wifi-Verbindung
-        if (id == R.id.action_connection)
-        {
-            android.util.Log.d("MainActivity", "Connection Action");
-
-            ConnectionUseCase mConnectionUseCase =  new ThreadPool().getConnectionUseCase();
-
-            // Listener ueberwacht die Connectionaktion
-            mConnectionUseCase.registerListener(connectionListener);
-
-            mConnectionUseCase.connectWiFi();
-
-            connectionDialog = showConnectDialog();
-
-            return true;
-        }
-
-
-
-        /*
-        if (id == R.id.action_store)
-        {
-            fragments.get(0).getChildFragmentManager().setFragmentResult("storeSocketKey", result);
-            return true;
-        }
-
-         */
-
-        /*
-        // Toolbar ADD Aktion
-        if (id == R.id.action_add)
-        {
-            android.util.Log.d("MainActivity", "Add Action");
-
-            // reicht die weitere Verarbeitung via FragmentResult am das aktuelle Fragment weiter
-            Bundle result = new Bundle();
-            result.putString("addSocketKey", "result");
-            FragmentManager fragmentManager = MainActivity.this.getSupportFragmentManager();
-            List<Fragment> fragments = fragmentManager.getFragments();
-            fragments.get(0).getChildFragmentManager().setFragmentResult("addSocketKey", result);
-
-            return true;
-        }
-*/
-
-
-        // Toolbar Delete Aktion
-        /*
-        if (id == R.id.action_delete)
-        {
-            android.util.Log.d("MainActivity", "Delete Action");
-
-            Bundle result = new Bundle();
-            result.putString("deleteSocketKey", "result");
-            FragmentManager fragmentManager = MainActivity.this.getSupportFragmentManager();
-            List<Fragment> fragments = fragmentManager.getFragments();
-            fragments.get(0).getChildFragmentManager().setFragmentResult("deleteSocketKey", result);
-
-            return true;
-        }
-        */
-
-        /*
-
-        // Toolbar 'EDIT' Aktion
-        if (id == R.id.action_edit)
-        {
-            //android.util.Log.d("MainActivity", "Edit Action");
-
-            // reicht die weitere Verarbeitung via FragmentResult am das aktuelle Fragment weiter
-            Bundle result = new Bundle();
-            result.putString("editSocketKey", "result");
-            FragmentManager fragmentManager = MainActivity.this.getSupportFragmentManager();
-            List<Fragment> fragments = fragmentManager.getFragments();
-            fragments.get(0).getChildFragmentManager().setFragmentResult("editSocketKey", result);
-
-            return true;
-        }
-
-
-
-         */
-
-
         return super.onOptionsItemSelected(item);
+    }
+
+    private void doWiFiConnection()
+    {
+        android.util.Log.d("MainActivity", "Connection Action");
+
+        ConnectionUseCase mConnectionUseCase =  new ThreadPool().getConnectionUseCase();
+
+        // Listener ueberwacht die Connectionaktion (Dialog 'connectionDialog' ausschalten)
+        mConnectionUseCase.registerListener(connectionListener);
+
+        // Verbindungsaufbau im separaten Thread
+        mConnectionUseCase.connectWiFi();
+
+        // Dialog fuer die Dauer des Verbindungsversuchs
+        connectionDialog = showConnectDialog();
+
     }
 
 
@@ -425,14 +382,27 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
 
      */
 
+    /*
+        experimentell
+     */
+    private Fragment getCurrentFragment()
+    {
+        FragmentManager fragmentManager = MainActivity.fragmentManager.getFragments().get(0).getChildFragmentManager();
+        return fragmentManager.getFragments().get(0);
+    }
 
-
+    /*
+        experimentell
+     */
     private Fragment getSelectedFragment()
     {
         Fragment selectedFrangment = null;
 
-        Fragment fragNavhost = MainActivity.this.getSupportFragmentManager().getPrimaryNavigationFragment();
-        FragmentManager fragmentManager = MainActivity.this.getSupportFragmentManager();
+        //Fragment fragNavhost = MainActivity.this.getSupportFragmentManager().getPrimaryNavigationFragment();
+        //FragmentManager fragmentManager = MainActivity.this.getSupportFragmentManager();
+
+        //Fragment fragNavhost = fragmentManager.getPrimaryNavigationFragment();
+        //FragmentManager fragmentManager = MainActivity.this.getSupportFragmentManager();
         List<Fragment> fragments = fragmentManager.getFragments();
         if(fragments != null)
         {

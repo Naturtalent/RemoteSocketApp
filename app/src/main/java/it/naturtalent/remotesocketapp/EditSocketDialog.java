@@ -138,7 +138,7 @@ public class EditSocketDialog  extends DialogFragment implements AdapterView.OnI
                                                             }
                                                         };
 
-                                                        RemoteDataUtils remoteDataUtils = new RemoteDataUtils(fragmentActivity, threadPushPoolListener);
+                                                        RemoteDataUtils remoteDataUtils = new RemoteDataUtils(threadPushPoolListener);
                                                         remoteDataUtils.saveSocketData(mAdapter);
 
                                                     }

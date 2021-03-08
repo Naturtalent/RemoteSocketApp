@@ -33,7 +33,7 @@
 
 <fragment
     android:id="@+id/SettingsFragment"
-    android:name="it.naturtalent.remotesocketapp.SettingsFragment"
+    android:name="it.naturtalent.remotesocketapp.PrefsFragment"
     android:label="fragment_settings"
     tools:layout="@xml/root_preferences" />
 

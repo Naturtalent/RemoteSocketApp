@@ -3,12 +3,16 @@ package it.naturtalent.multithread;
 import android.content.Context;
 
 import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.content.res.Resources;
 import android.util.Xml;
 import android.widget.Toast;
 
 import androidx.annotation.WorkerThread;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceManager;
 
 import com.tinkerforge.AlreadyConnectedException;
 import com.tinkerforge.IPConnection;
@@ -32,6 +36,7 @@ import java.util.Map;
 
 import it.naturtalent.databinding.RemoteData;
 import it.naturtalent.remotesocketapp.MainActivity;
+import it.naturtalent.remotesocketapp.PrefsFragment;
 import it.naturtalent.remotesocketapp.R;
 import it.naturtalent.remotesocketapp.RemoteDataUtils;
 
@@ -443,6 +448,11 @@ public class FakeDataFetcher {
         xmlSerializer.endTag("", SOCKET_ELEMENT);
     }
 
+    /*
+    *
+            Tinkerforge WiFi Connection
+    *
+     */
 
     public List<RemoteData> getDefaultModel()
     {
@@ -462,7 +472,7 @@ public class FakeDataFetcher {
         // simulate 2 seconds worth of work
         try
         {
-            Thread.sleep(4000);
+            Thread.sleep(2000);
 
             // die reale Connectfunktion muss im Fehlerfall eine 'InterruptedException e' werfen
             ipConnection = doConnection();
@@ -497,6 +507,13 @@ public class FakeDataFetcher {
         host = "NtHost";
         port = "4223";
 
+        // die Parameter 'host' und 'port' aus den Settings lesen
+        Resources res = MainActivity.getAppContext().getResources();
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(MainActivity.getAppContext());
+        host = pref.getString(res.getString(R.string.host_key),res.getString(R.string.host_default));
+        port = pref.getString(res.getString(R.string.port_key),res.getString(R.string.port_default));
+
+        // ueber Tinkerforge API WiFi - Verbindung herstellen
         IPConnection ipConnection = new IPConnection();
         ipConnection.connect(host, Integer.parseInt(port));
         return ipConnection;
