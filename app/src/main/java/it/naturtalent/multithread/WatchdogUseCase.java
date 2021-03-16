@@ -9,32 +9,26 @@ import com.techyourchance.threadposter.UiThreadPoster;
 import com.tinkerforge.IPConnection;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import it.naturtalent.databinding.RemoteData;
-import it.naturtalent.remotesocketapp.SocketViewAdapter;
-
-public class ConnectionUseCase
+public class WatchdogUseCase
 {
 
-
-    // Interface des Connection Listeners
-    public interface ConnectionListener
+    // Interface des Wd Listeners
+    public interface WatchdogListener
     {
-        void onConnectionEstablished(IPConnection ipcon);
-
-        void onConnectionFailed(String message);
+        // Uerwachungszeit ist abgelaufen
+        void onWatchdogTimeout(String message);
     }
 
     private final FakeDataFetcher mFakeDataFetcher;
     private final BackgroundThreadPoster mBackgroundThreadPoster;
     private final UiThreadPoster mUiThreadPoster;
 
-    // Mao zur Aufnahme aller Connectionlistener
-    private final Set<ConnectionListener> mListeners = Collections.newSetFromMap(
-            new ConcurrentHashMap<ConnectionListener, Boolean>());
+    // Mao zur Aufnahme aller Watchdoglistener
+    private final Set<WatchdogListener> mListeners = Collections.newSetFromMap(
+            new ConcurrentHashMap<WatchdogListener, Boolean>());
 
     /**
      * Konstruktion
@@ -42,26 +36,26 @@ public class ConnectionUseCase
      * @param backgroundThreadPoster
      * @param uiThreadPoster
      */
-    public ConnectionUseCase(FakeDataFetcher fakeDataFetcher,
-                             BackgroundThreadPoster backgroundThreadPoster,
-                             UiThreadPoster uiThreadPoster)
+    public WatchdogUseCase(FakeDataFetcher fakeDataFetcher,
+                           BackgroundThreadPoster backgroundThreadPoster,
+                           UiThreadPoster uiThreadPoster)
     {
         mFakeDataFetcher = fakeDataFetcher;
         mBackgroundThreadPoster = backgroundThreadPoster;
         mUiThreadPoster = uiThreadPoster;
     }
 
-    public void registerListener(ConnectionListener listener)
+    public void registerListener(WatchdogListener listener)
     {
         mListeners.add(listener);
     }
 
-    public void unregisterListener(ConnectionListener listener)
+    public void unregisterListener(WatchdogListener listener)
     {
         mListeners.remove(listener);
     }
 
-    public void connectWiFi()
+    public void startTimer(final int millisec)
     {
         // offload work to background thread
         mBackgroundThreadPoster.post(new Runnable()
@@ -69,57 +63,57 @@ public class ConnectionUseCase
             @Override
             public void run()
             {
-                connectWiFiSync();
+                timer(millisec);
             }
         });
     }
 
     @WorkerThread
-    private void connectWiFiSync()
+    private void timer(int millisec)
     {
         try
         {
-            final IPConnection ipConnection = mFakeDataFetcher.connectWiFi();
+            Thread.sleep(millisec);
 
             mUiThreadPoster.post(new Runnable()
             { // notify listeners on UI thread
                 @Override
                 public void run()
                 {
-                    notifySuccess(ipConnection);
+                    notifySuccess();
                 }
             });
-        } catch (final FakeDataFetcher.ConnectException e)
+
+        } catch (InterruptedException E)
         {
             mUiThreadPoster.post(new Runnable()
             { // notify listeners on UI thread
                 @Override
                 public void run()
                 {
-                    //android.util.Log.d("ConnectionUserCase", "ConnectionException");
-                    notifyFailure(e.message);
+                    notifyFailure();
                 }
             });
         }
     }
 
-    // Listener ueber den gescheiterten Verbindungsaufbau informieren
+    // Listener ueber Watchdog Error informieren
     @UiThread
-    public void notifyFailure(String message)
+    public void notifyFailure()
     {
-        for (ConnectionListener listener : mListeners)
+        for (WatchdogListener listener : mListeners)
         {
-            listener.onConnectionFailed(message);
+            listener.onWatchdogTimeout("error watchdog");
         }
     }
 
-    // Listener ueber den erfolgreichen Verbindungsaufbau informieren
+    // Watchdog Listener ueber den Ablauf des Timers informieren
     @UiThread
-    private void notifySuccess(IPConnection ipcon)
+    private void notifySuccess()
     {
-        for (ConnectionListener listener : mListeners)
+        for (WatchdogListener listener : mListeners)
         {
-            listener.onConnectionEstablished(ipcon);
+            listener.onWatchdogTimeout("timeout");
         }
     }
 

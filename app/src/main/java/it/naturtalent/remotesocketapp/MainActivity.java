@@ -1,5 +1,6 @@
 package it.naturtalent.remotesocketapp;
 
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -31,6 +32,7 @@ import it.naturtalent.databinding.RemoteData;
 import it.naturtalent.multithread.ConnectionUseCase;
 import it.naturtalent.multithread.FetchDataUseCase;
 import it.naturtalent.multithread.ThreadPool;
+import it.naturtalent.multithread.WatchdogUseCase;
 
 
 public class MainActivity extends AppCompatActivity  implements FetchDataUseCase.Listener
@@ -42,12 +44,41 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
 
     private static Context context;
 
-    private DialogFragment connectionDialog;
+    //private DialogFragment connectionDialog;
+    private Dialog connectionDialog;
 
     private IPConnection ipcon;
 
     // wird zum Zeigen diverse DialogFragmente benoetigt
     public static FragmentManager fragmentManager;
+
+    private WatchdogUseCase.WatchdogListener watchdogListener = new WatchdogUseCase.WatchdogListener()
+    {
+        @Override
+        public void onWatchdogTimeout(String message)
+        {
+            if(connectionDialog != null)
+            {
+                connectionDialog.dismiss();
+                connectionDialog = null;
+
+                new AlertDialog.Builder(MainActivity.this)
+                        .setIcon(R.drawable.alert_dialog_dart_icon)
+                        .setTitle("Timeout")
+                        .setView(R.layout.custom_alert)
+                        .setCancelable(true)
+                        .setPositiveButton(R.string.alert_dialog_ok,
+                                new DialogInterface.OnClickListener()
+                                {
+                                    public void onClick(DialogInterface dialog, int whichButton)
+                                    {
+                                        // tut nichts
+                                    }
+                                })
+                        .create().show();
+            }
+        }
+    };
 
     /*
         Listener informiert ueber das Ergebnis des WiFi-Verbindungsaufbau
@@ -65,7 +96,10 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
 
             // Dialogfenster schliessen
             if(connectionDialog != null)
+            {
                 connectionDialog.dismiss();
+                connectionDialog = null;
+            }
         }
 
 
@@ -79,7 +113,10 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
 
             // Dialogfenster schliessen
             if(connectionDialog != null)
+            {
                 connectionDialog.dismiss();
+                connectionDialog = null;
+            }
 
             // Ueber den misslungen Verbindungversuch informieren
             new AlertDialog.Builder(MainActivity.this)
@@ -164,6 +201,8 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
         super.onStart();
         doWiFiConnection();
     }
+
+
 
     /*
             ausfuehren der Schaltfunktion der beiden FloatingActionButton (Ein-/Ausschalten)
@@ -282,11 +321,9 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
                 mConnectionUseCase.connectWiFi();
 
                 // Dialog fuer die Dauer des Verbindungsversuchs
-                connectionDialog = showConnectDialog();
+                showConnectDialog();
 
                 break;
-
-
         }
 
         return super.onOptionsItemSelected(item);
@@ -301,11 +338,16 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
         // Listener ueberwacht die Connectionaktion (Dialog 'connectionDialog' ausschalten)
         mConnectionUseCase.registerListener(connectionListener);
 
+        // Watchdog begrenzt die Dauer bei Verbindungsaufbau (Timeout error Tinkerforge)
+        //WatchdogUseCase mWatchdogCase =  new ThreadPool().getWatchdogCase();
+        //mWatchdogCase.registerListener(watchdogListener);
+        //mWatchdogCase.startTimer(4000);
+
         // Verbindungsaufbau im separaten Thread
         mConnectionUseCase.connectWiFi();
 
         // Dialog fuer die Dauer des Verbindungsversuchs
-        connectionDialog = showConnectDialog();
+        showConnectDialog();
 
     }
 
@@ -336,9 +378,31 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
     /**
      * Dialog wird waehrend des Verbindungsaufbaus gezeigt.
      * Dialog wird vom ConnectListener geschlossen.
+     * Dialog wird auch vom Watchdog Timer eschlossen.
      *
      * @return
      */
+    private void showConnectDialog()
+    {
+        //android.util.Log.i("FragmentAlertDialog", "Dialog Speichern zeigen");
+
+        //Watchdog begrenzt die Dauer bei Verbindungsaufbau (Timeout error Tinkerforge)
+        WatchdogUseCase mWatchdogCase =  new ThreadPool().getWatchdogCase();
+        mWatchdogCase.registerListener(watchdogListener);
+        mWatchdogCase.startTimer(4000);
+
+        // der Dialog
+        connectionDialog = new AlertDialog.Builder(this)
+                .setIcon(R.drawable.alert_dialog_dart_icon)
+                .setTitle("WiFi Verbindungsaufbau")
+                .setView(R.layout.custom_alert)
+                .setCancelable(true)
+                .create();
+
+        connectionDialog.show();
+    }
+
+    /*
     private DialogFragment showConnectDialog()
     {
         //android.util.Log.i("FragmentAlertDialog", "Dialog Speichern zeigen");
@@ -347,6 +411,10 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
         dialogFragment.show(MainActivity.this.getSupportFragmentManager(), "dialog");
         return dialogFragment;
     }
+
+     */
+
+
 
     /*
     // ein-/ausschalten

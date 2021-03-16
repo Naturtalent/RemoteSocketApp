@@ -444,6 +444,9 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
     // UID des Remote Switch Bricklet
     private static final String UID = "v1T";
 
+    /*
+        die  eigentliche Schaltfunktion durchfuehren
+     */
     private void doSwitchSocket(boolean switchState)
     {
         // die IPconnection aus dem ViewModel lesen
@@ -453,7 +456,7 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
 
         if (ipcon != null)
         {
-            // ein Deviceobjekt erzeugen
+            // ein Deviceobjekt 'RemoteBricklet' erzeugen
             BrickletRemoteSwitch rs = new BrickletRemoteSwitch(UID, ipcon);
             rs.addSwitchingDoneListener(new BrickletRemoteSwitch.SwitchingDoneListener()
             {
@@ -464,6 +467,7 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
                 }
             });
 
+            // Schalter ein-/aus code
             short switchCode = (switchState) ? BrickletRemoteSwitch.SWITCH_TO_ON : BrickletRemoteSwitch.SWITCH_TO_OFF;
 
             // Daten des selektierten Schalters ermitteln
@@ -472,7 +476,7 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
             {
                 try
                 {
-                    // Schaltvorgang durchfuehren
+                    // Schaltvorgang im 'RemoteBricklet' durchfuehren
                     rs.switchSocketA(new Short(remoteSocket.getHouseCode()).shortValue(), new Short(remoteSocket.getRemoteCode()).shortValue(), switchCode);
                 } catch (TinkerforgeException e)   //catch (TinkerforgeException e; NumberFormatException ex)
                 {

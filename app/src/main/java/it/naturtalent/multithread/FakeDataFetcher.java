@@ -5,6 +5,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+
+import android.os.AsyncTask;
+import android.os.Handler;
 import android.util.Xml;
 import android.widget.Toast;
 
@@ -33,6 +36,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+
 
 import it.naturtalent.databinding.RemoteData;
 import it.naturtalent.remotesocketapp.MainActivity;
@@ -454,6 +460,8 @@ public class FakeDataFetcher {
     *
      */
 
+    //IPConnection ipCon = null;
+
     public List<RemoteData> getDefaultModel()
     {
         List<RemoteData> list = new ArrayList<RemoteData>();
@@ -516,7 +524,7 @@ public class FakeDataFetcher {
         // ueber Tinkerforge API WiFi - Verbindung herstellen
         IPConnection ipConnection = new IPConnection();
         ipConnection.connect(host, Integer.parseInt(port));
+
         return ipConnection;
     }
-
 }

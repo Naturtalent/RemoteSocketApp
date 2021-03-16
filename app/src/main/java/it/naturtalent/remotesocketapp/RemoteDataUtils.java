@@ -93,7 +93,7 @@ public class RemoteDataUtils
         }
 
         /**
-         * Ein Alert-Dialog erzeugen und waehrend des Datenladevorgangs angezeigen.
+         * Ein Alert-Dialog erzeugen und waehrend des langlaufenden Prozesses angezeigen.
          *
          * @param savedInstanceState
          * @return
@@ -115,13 +115,17 @@ public class RemoteDataUtils
                                 {
 
                                     //it.naturtalent.common.logger.Log.i("FragmentAlertDialog", "Negative click!");
-                                    android.util.Log.i("FragmentAlertDialog", "Abbruch!");
+                                    //android.util.Log.i("FragmentAlertDialog", "Abbruch!");
 
-                                    // verhindert, dass der Ladethread Daten liefert
-                                    mFetchDataUseCase.unregisterListener(threadPoolListener);
+                                    // null, wenn z.B. Timeout bei Verbindungsaufbau
+                                    if(mFetchDataUseCase != null)
+                                    {
+                                        // verhindert, dass der Ladethread Daten liefert
+                                        mFetchDataUseCase.unregisterListener(threadPoolListener);
 
-                                    // dieses DialogFragment wird geschlossen
-                                    mFetchDataUseCase.notifyFailure();
+                                        // liefert Fehlermeldung, dieses DialogFragment wird geschlossen
+                                        mFetchDataUseCase.notifyFailure();
+                                    }
                                 }
                             })
                     .create();

@@ -29,4 +29,10 @@ public class ThreadPool extends Application {
             new ConnectionUseCase(mFakeDataFetcher, mBackgroundThreadPoster, mUiThreadPoster);
     public ConnectionUseCase getConnectionUseCase() {return mConnectionUseCase; }
 
+    private final WatchdogUseCase mWatchdogUseCase =
+            new WatchdogUseCase(mFakeDataFetcher, mBackgroundThreadPoster, mUiThreadPoster);
+    public WatchdogUseCase getWatchdogCase() {return mWatchdogUseCase; }
+
+
+
 }
