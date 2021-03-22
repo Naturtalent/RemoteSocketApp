@@ -1,8 +1,11 @@
 package it.naturtalent.remotesocketapp;
 
+import android.Manifest;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -11,6 +14,8 @@ import android.view.View;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -24,6 +29,7 @@ import androidx.navigation.fragment.NavHostFragment;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.tinkerforge.IPConnection;
+import com.tinkerforge.NotConnectedException;
 
 import java.util.List;
 import java.util.Map;
@@ -52,6 +58,7 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
     // wird zum Zeigen diverse DialogFragmente benoetigt
     public static FragmentManager fragmentManager;
 
+    // Watchdog meldet die abgelaufene Zeit
     private WatchdogUseCase.WatchdogListener watchdogListener = new WatchdogUseCase.WatchdogListener()
     {
         @Override
@@ -59,9 +66,11 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
         {
             if(connectionDialog != null)
             {
+                // Connectiondialogfenster schliessen
                 connectionDialog.dismiss();
                 connectionDialog = null;
 
+                // Alertdialog informiert ueber abgelaufene Zeit
                 new AlertDialog.Builder(MainActivity.this)
                         .setIcon(R.drawable.alert_dialog_dart_icon)
                         .setTitle("Timeout")
@@ -389,7 +398,7 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
         //Watchdog begrenzt die Dauer bei Verbindungsaufbau (Timeout error Tinkerforge)
         WatchdogUseCase mWatchdogCase =  new ThreadPool().getWatchdogCase();
         mWatchdogCase.registerListener(watchdogListener);
-        mWatchdogCase.startTimer(4000);
+        mWatchdogCase.startTimer(8000);
 
         // der Dialog
         connectionDialog = new AlertDialog.Builder(this)
@@ -520,6 +529,12 @@ public class MainActivity extends AppCompatActivity  implements FetchDataUseCase
 
         return selectedFrangment;
     }
+
+
+
+
+
+
 
 
 }

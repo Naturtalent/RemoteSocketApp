@@ -6,36 +6,39 @@ import androidx.annotation.WorkerThread;
 
 import com.techyourchance.threadposter.BackgroundThreadPoster;
 import com.techyourchance.threadposter.UiThreadPoster;
+import com.tinkerforge.BrickletRemoteSwitch;
 import com.tinkerforge.IPConnection;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import it.naturtalent.databinding.RemoteData;
-import it.naturtalent.remotesocketapp.SocketViewAdapter;
 
-public class ConnectionUseCase
+/**
+ *  Die Schaltbefehle sollen einem eigenen Thread erfolgen um Exception
+ *  'android.os.NetworkOnMainThreadException' zu vermeiden.
+ *  Exception wurde geworfen beim Ausfuehren der Schreibfunktion
+ *  ueber den SocketOutputStream in der Tinkerforge API IPBaseConnection
+ */
+public class SwitchSocketUseCase
 {
-
-
-    // Interface des Connection Listeners
+    // Interface des SwitchSocket Listeners (informiert ueber den eigentlichen Schaltvorgang)
     // Instancen @see MainActivity
-    public interface ConnectionListener
+    public interface SwitchSocketListener
     {
-        void onConnectionEstablished(IPConnection ipcon);
+        void onSwitchSuccess(boolean switchState);
 
-        void onConnectionFailed(String message);
+        void onSwitchFailed(String message);
     }
 
     private final FakeDataFetcher mFakeDataFetcher;
     private final BackgroundThreadPoster mBackgroundThreadPoster;
     private final UiThreadPoster mUiThreadPoster;
 
-    // Mao zur Aufnahme aller Connectionlistener
-    private final Set<ConnectionListener> mListeners = Collections.newSetFromMap(
-            new ConcurrentHashMap<ConnectionListener, Boolean>());
+    // Map zur Aufnahme aller Connectionlistener
+    private final Set<SwitchSocketListener> mListeners = Collections.newSetFromMap(
+            new ConcurrentHashMap<SwitchSocketListener, Boolean>());
 
     /**
      * Konstruktion
@@ -43,26 +46,26 @@ public class ConnectionUseCase
      * @param backgroundThreadPoster
      * @param uiThreadPoster
      */
-    public ConnectionUseCase(FakeDataFetcher fakeDataFetcher,
-                             BackgroundThreadPoster backgroundThreadPoster,
-                             UiThreadPoster uiThreadPoster)
+    public SwitchSocketUseCase(FakeDataFetcher fakeDataFetcher,
+                               BackgroundThreadPoster backgroundThreadPoster,
+                               UiThreadPoster uiThreadPoster)
     {
         mFakeDataFetcher = fakeDataFetcher;
         mBackgroundThreadPoster = backgroundThreadPoster;
         mUiThreadPoster = uiThreadPoster;
     }
 
-    public void registerListener(ConnectionListener listener)
+    public void registerListener(SwitchSocketListener listener)
     {
         mListeners.add(listener);
     }
 
-    public void unregisterListener(ConnectionListener listener)
+    public void unregisterListener(SwitchSocketListener listener)
     {
         mListeners.remove(listener);
     }
 
-    public void connectWiFi()
+    public void switchRemoteSocket(final BrickletRemoteSwitch remoteSwitch, final RemoteData remoteData, final boolean switchState)
     {
         // offload work to background thread
         mBackgroundThreadPoster.post(new Runnable()
@@ -70,27 +73,27 @@ public class ConnectionUseCase
             @Override
             public void run()
             {
-                connectWiFiSync();
+                doSwitchRemoteSocket(remoteSwitch, remoteData, switchState);
             }
         });
     }
 
     @WorkerThread
-    private void connectWiFiSync()
+    private void doSwitchRemoteSocket(BrickletRemoteSwitch remoteSwitch, RemoteData remoteData, final boolean switchState)
     {
         try
         {
-            final IPConnection ipConnection = mFakeDataFetcher.connectWiFi();
+            mFakeDataFetcher.switchRemoteSocket(remoteSwitch, remoteData, switchState);
 
             mUiThreadPoster.post(new Runnable()
             { // notify listeners on UI thread
                 @Override
                 public void run()
                 {
-                    notifySuccess(ipConnection);
+                    notifySuccess(switchState);
                 }
             });
-        } catch (final FakeDataFetcher.ConnectException e)
+        } catch (final FakeDataFetcher.SwitchRemoteException e)
         {
             mUiThreadPoster.post(new Runnable()
             { // notify listeners on UI thread
@@ -109,20 +112,20 @@ public class ConnectionUseCase
     @UiThread
     public void notifyFailure(String message)
     {
-        for (ConnectionListener listener : mListeners)
+        for (SwitchSocketListener listener : mListeners)
         {
-            listener.onConnectionFailed(message);
+            listener.onSwitchFailed(message);
         }
     }
 
     // Listener ueber den erfolgreichen Verbindungsaufbau informieren
     // @see MainActivity
     @UiThread
-    private void notifySuccess(IPConnection ipcon)
+    private void notifySuccess(boolean switchState)
     {
-        for (ConnectionListener listener : mListeners)
+        for (SwitchSocketListener listener : mListeners)
         {
-            listener.onConnectionEstablished(ipcon);
+            listener.onSwitchSuccess(switchState);
         }
     }
 

@@ -14,12 +14,15 @@ import android.widget.Toast;
 import androidx.annotation.WorkerThread;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.DialogFragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceManager;
 
 import com.tinkerforge.AlreadyConnectedException;
+import com.tinkerforge.BrickletRemoteSwitch;
 import com.tinkerforge.IPConnection;
 import com.tinkerforge.NetworkException;
+import com.tinkerforge.TinkerforgeException;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
@@ -45,6 +48,7 @@ import it.naturtalent.remotesocketapp.MainActivity;
 import it.naturtalent.remotesocketapp.PrefsFragment;
 import it.naturtalent.remotesocketapp.R;
 import it.naturtalent.remotesocketapp.RemoteDataUtils;
+import it.naturtalent.remotesocketapp.SharedIPConnectionModel;
 
 public class FakeDataFetcher {
 
@@ -61,6 +65,15 @@ public class FakeDataFetcher {
             this.message = message;
         }
     }
+
+    public static class SwitchRemoteException extends Exception {
+        public String message;
+        public SwitchRemoteException(String message)
+        {
+            this.message = message;
+        }
+    }
+
 
     private boolean mIsError = true;
 
@@ -454,13 +467,6 @@ public class FakeDataFetcher {
         xmlSerializer.endTag("", SOCKET_ELEMENT);
     }
 
-    /*
-    *
-            Tinkerforge WiFi Connection
-    *
-     */
-
-    //IPConnection ipCon = null;
 
     public List<RemoteData> getDefaultModel()
     {
@@ -472,6 +478,11 @@ public class FakeDataFetcher {
         return list;
     }
 
+    /*
+
+            C o n n e c t i o n
+
+     */
     @WorkerThread
     public IPConnection connectWiFi() throws ConnectException
     {
@@ -480,7 +491,8 @@ public class FakeDataFetcher {
         // simulate 2 seconds worth of work
         try
         {
-            Thread.sleep(2000);
+            // dummy Verzoegerung
+            Thread.sleep(1000);
 
             // die reale Connectfunktion muss im Fehlerfall eine 'InterruptedException e' werfen
             ipConnection = doConnection();
@@ -527,4 +539,49 @@ public class FakeDataFetcher {
 
         return ipConnection;
     }
+
+    /*
+
+            S w i t c h R e m o t e S o c k e t
+
+            Die Schaltbefehle im separaten Thread um
+            'android.os.NetworkOnMainThreadException' zu vermeiden.
+
+     */
+
+    @WorkerThread
+    public void switchRemoteSocket(BrickletRemoteSwitch remoteSwitch, RemoteData remoteData, boolean switchState) throws SwitchRemoteException
+    {
+        try
+        {
+            Thread.sleep(100);
+            doSwitchRemoteSocket(remoteSwitch, remoteData, switchState);
+
+        } catch (InterruptedException | TinkerforgeException e)
+        {
+            throw new SwitchRemoteException(e.getMessage());
+        }
+
+        // Fehlerantwort fuer jedes zweite Mal (unklar)
+        mIsError = !mIsError;
+
+        if (mIsError)
+        {
+            throw new SwitchRemoteException("Multicast Fehler");
+        }
+    }
+
+    /*
+        Die eigentliche Schaltfunktion
+     */
+    private void doSwitchRemoteSocket(BrickletRemoteSwitch remoteSwitch,  RemoteData remoteData, boolean switchState) throws TinkerforgeException
+    {
+        // Schalter ein-/aus code
+        short switchCode = (switchState) ? BrickletRemoteSwitch.SWITCH_TO_ON : BrickletRemoteSwitch.SWITCH_TO_OFF;
+
+        // Schaltvorgang im 'RemoteBricklet' durchfuehren
+        remoteSwitch.switchSocketA(new Short(remoteData.getHouseCode()).shortValue(), new Short(remoteData.getRemoteCode()).shortValue(), switchCode);
+    }
+
+
 }

@@ -33,6 +33,9 @@ public class ThreadPool extends Application {
             new WatchdogUseCase(mFakeDataFetcher, mBackgroundThreadPoster, mUiThreadPoster);
     public WatchdogUseCase getWatchdogCase() {return mWatchdogUseCase; }
 
+    private final SwitchSocketUseCase switchSocketUseCase =
+            new SwitchSocketUseCase(mFakeDataFetcher, mBackgroundThreadPoster, mUiThreadPoster);
+    public SwitchSocketUseCase getSwitchSocketCase() {return switchSocketUseCase; }
 
 
 }

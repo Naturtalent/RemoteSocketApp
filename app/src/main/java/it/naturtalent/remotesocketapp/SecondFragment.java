@@ -19,9 +19,12 @@ import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.tinkerforge.AlreadyConnectedException;
 import com.tinkerforge.BrickletRemoteSwitch;
 import com.tinkerforge.BrickletRemoteSwitchV2;
 import com.tinkerforge.IPConnection;
+import com.tinkerforge.NetworkException;
+import com.tinkerforge.NotConnectedException;
 import com.tinkerforge.TinkerforgeException;
 
 import java.util.List;
@@ -30,6 +33,9 @@ import it.naturtalent.databinding.RemoteData;
 import it.naturtalent.multithread.FakeDataFetcher;
 import it.naturtalent.multithread.FetchDataUseCase;
 import it.naturtalent.multithread.PushDataUseCase;
+import it.naturtalent.multithread.SwitchSocketUseCase;
+import it.naturtalent.multithread.ThreadPool;
+import it.naturtalent.multithread.WatchdogUseCase;
 
 /*
     Diese Klasse implementiert einen 'FetchDataUseCase.Listener'.
@@ -47,7 +53,32 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
     //private RemoteData selectedRemoteData;
     private int selectedIDX = 0;
 
+    private SwitchSocketUseCase.SwitchSocketListener switchSocketListener = new SwitchSocketUseCase.SwitchSocketListener()
+    {
+        @Override
+        public void onSwitchSuccess(boolean switchState)
+        {
+            // keine weitere Aktion nach erfolgreichem ein-ausschalten
+        }
 
+        @Override
+        public void onSwitchFailed(String message)
+        {
+            new AlertDialog.Builder(getActivity())
+                    .setIcon(R.drawable.delete_icon_gray)
+                    .setTitle(R.string.alert_dialog_socketswitcherror_title)
+                    .setCancelable(true)
+                    .setPositiveButton(R.string.alert_dialog_ok,
+                            new DialogInterface.OnClickListener()
+                            {
+                                public void onClick(DialogInterface dialog, int whichButton)
+                                {
+                                    // tut nichts
+                                }
+                            })
+                    .create().show();
+        }
+    };
 
     @Override
     public void onCreate(@Nullable final Bundle savedInstanceState)
@@ -444,10 +475,95 @@ public class SecondFragment extends Fragment implements FetchDataUseCase.Listene
     // UID des Remote Switch Bricklet
     private static final String UID = "v1T";
 
+    private String HOST = "NtHost";
+    private int PORT = 4223;
+
+    private String houseCode = "1";
+    private String receiveCode = "16";
+
+
+    private void doSwitchSocket(boolean switchState)
+    {
+        // die IPconnection aus dem ViewModel lesen
+        ViewModelProvider viewModelProvider = new ViewModelProvider(requireActivity());
+        SharedIPConnectionModel ipConnectionModel = viewModelProvider.get(SharedIPConnectionModel.class);
+        IPConnection ipcon = ipConnectionModel.getIpConnection();
+
+        // Daten des selektierten Schalters ermitteln
+        RemoteData remoteSocket = mAdapter.getmDataSet().get(mAdapter.getSelectedPos());
+
+
+        if ((ipcon != null) && (remoteSocket != null))
+        {
+            BrickletRemoteSwitch rs = new BrickletRemoteSwitch(UID, ipcon);
+
+            SwitchSocketUseCase switchSocketUseCase =  new ThreadPool().getSwitchSocketCase();
+            switchSocketUseCase.switchRemoteSocket(rs, remoteSocket, switchState);
+            switchSocketUseCase.registerListener(switchSocketListener);
+        }
+    }
+
+    /*
+
+
+            experimentell
+
+
+     */
+
     /*
         die  eigentliche Schaltfunktion durchfuehren
      */
-    private void doSwitchSocket(boolean switchState)
+    private void doSwitchSocketNEW(boolean switchState)
+    {
+        short switchCode = 1;
+        IPConnection ipcon = new IPConnection(); // Create IP connection
+        BrickletRemoteSwitch rs = new BrickletRemoteSwitch(UID, ipcon);
+        try
+        {
+            ipcon.connect(HOST, PORT); // Connect to brickd
+            ipcon.disconnect();
+
+            switchCode = (switchState) ? BrickletRemoteSwitch.SWITCH_TO_ON : BrickletRemoteSwitch.SWITCH_TO_OFF;
+            rs.switchSocketA(new Short(houseCode).shortValue(), new Short(receiveCode).shortValue(), switchCode);
+            ipcon.disconnect();
+
+        } catch (NetworkException e)
+        {
+            try
+            {
+                ipcon.disconnect();
+                ipcon.connect(HOST, PORT); // Connect to brickd
+                rs.switchSocketA(new Short(houseCode).shortValue(), new Short(receiveCode).shortValue(), switchCode);
+                ipcon.disconnect();
+
+            } catch (NotConnectedException ex)
+            {
+                ex.printStackTrace();
+            } catch (AlreadyConnectedException ex)
+            {
+                ex.printStackTrace();
+            } catch (NetworkException ex)
+            {
+                ex.printStackTrace();
+            } catch (TinkerforgeException ex)
+            {
+                ex.printStackTrace();
+            }
+
+            e.printStackTrace();
+        } catch (AlreadyConnectedException e)
+        {
+            e.printStackTrace();
+        } catch (TinkerforgeException e)
+        {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    private void doSwitchSocketold(boolean switchState)
     {
         // die IPconnection aus dem ViewModel lesen
         ViewModelProvider viewModelProvider = new ViewModelProvider(requireActivity());
